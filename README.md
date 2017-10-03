@@ -4,7 +4,7 @@ To view html download and save as html and open in brouser.
 
 # Sample Results:
 
-## NetProfit vs LoanOriginationMonth
+##               NetProfit vs LoanOriginationMonth
 ![Alt text](/imgs/img2.png?raw=true "Optional Title")
 
 
