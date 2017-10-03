@@ -1,0 +1,2888 @@
+Loan Data Exploration  by Bill Kapsalis
+========================================================
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Load all of the packages that you end up using
+# in your analysis in this code chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk.
+# This prevents the code from displaying in the knitted HTML output.
+# You should set echo=FALSE for all code chunks in your file.
+
+
+#install.packages('dplyr')
+#install.packages('gridExtra')
+#install.packages('reshape2')
+#install.packages('Biobase')
+#install.packages('GGally')
+#install.packages('scales')
+#install.packages('memisc')
+#install.packages('RColorBrewer)
+#install.packages('lubridate')
+#install.packages('lattice')
+#install.packages('MASS')
+#install.packages('car')
+#install.packages('reshape')
+#install.packages('plyr')
+#install.packages('ggplot2')
+#install.packages('energy')
+#install.packages('ggthemes')
+
+#names of functions follow library.
+library(knitr)
+library(psych)#pairs.panels()with 'dplyr'
+library(dplyr)#%>%,group_by(), summaries(),#pairs.panels() 
+#with 'psyck plyr arrange()
+library(grid)#needed for gridExtra
+library(gridExtra)#grid.arrange()
+library(reshape2)#dcast() and melt()
+#library(Biobase)
+library(GGally)#ggpairs
+library(scales)
+library(memisc)
+library(RColorBrewer)
+library(lubridate)#update()
+library(mgcv)
+library(ggplot2)#qplot(),ggplot() and hline() and ggsave() ggtheme(), theme_update()~theme_set()
+library(stats)#cor.test()?
+library(energy)#dcor.ttest()
+library(ggthemes)#theme_set(theme_minimal(20))?do i need ggthemes??see ggplot2
+#all in Load data block 'base' except transform which is utility.
+```
+
+```{r echo=FALSE, Load_the_Data}
+#getwd()
+setwd('~')
+setwd('Desktop/EDA_Course_Materials')
+#setwd('EDA_Course_Materials')
+loans81<-read.csv('prosperLoanData.csv',header=TRUE)
+#---------+---------+---------+---------+---------+---------+---------+---------+
+```
+I used a subset of the ‘prosperLoanData.csv’ to create a data frame
+with 15 columns. I chose variables that may give insight into loan criteria for granting a loan and determining interest rate.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+loans15<-subset(loans81, select=c( "LoanStatus","BorrowerRate",   
+        "EmploymentStatusDuration", "EmploymentStatus","CreditScoreRangeLower", 
+        "CreditScoreRangeUpper","FirstRecordedCreditLine",  "AmountDelinquent", 
+        "DebtToIncomeRatio", "IncomeRange", "IncomeVerifiable", 
+        "StatedMonthlyIncome", "LoanOriginalAmount","LoanOriginationDate", 
+        "LP_NetPrincipalLoss"))
+rm(loans81)
+#names(loans15)
+#---------+---------+---------+---------+---------+---------+---------+---------+
+```
+
+# Univariate Plots Section
+## Data description
+The dimensions of the data frame are:
+```{r  echo=FALSE, Univariate_Plots-dimensions}
+dim(loans15)
+```
+
+Variables:
+```{r  echo=FALSE, Univariate_Plots-names}
+names(loans15)
+```
+
+Data frame structure:
+```{r  echo=FALSE, Univariate_Plots-structure}
+str(loans15)
+```
+
+Levels of LoanStatus variable:
+```{r  echo=FALSE, Univariate_Plots-levels-of-LoanStatus-variable}
+levels(loans15$LoanStatus)
+```
+
+Levels of IncomeRange variable:
+```{r  echo=FALSE, Univariate_Plots-levels-of-IncomeRange-variable}
+levels(loans15$IncomeRange)
+```
+Summary of the data frame:
+```{r  echo=FALSE, Univariate_Plots-summary-of-df}
+summary(loans15)
+```
+A quick assessment shows most loans go to people with an income 
+between $25,000 and $74,999. 16628 loans out of 112635 were in
+'default' or 'charged off at a loss'. 93747 loans out of 112635 
+were 'Current Loans'( payments on time) or 'Completed Loans'.
+
+
+I am going to look at each variable one at a time to get a feel of the
+distributions and ranges.
+
+First LoanStatus
+```{r  echo=FALSE, Univariate_Plots-levels-of-LoanStatus}
+levels(loans15$LoanStatus)
+```
+I’m going to change the factor variable LoanStatus to an ordered factor
+variables with bad LoanStatus to good loanStatus going from left to right. 
+This will hopefully enable us to read the data easier and maybe find 
+some trends.
+
+Figure 1
+
+```{r  echo=FALSE, Univariate_Plots-order-LoanStatus}
+#---------+---------+---------+---------+---------+---------+---------+---------+
+
+loans15$LoanStatus <- ordered(loans15$LoanStatus, levels = c("Cancelled",
+      "Chargedoff", "Defaulted", "Past Due (>120 days)",  
+      "Past Due (91-120 days)", "Past Due (61-90 days)",  
+      "Past Due (31-60 days)", "Past Due (16-30 days)", 
+      "Past Due (1-15 days)","FinalPaymentInProgress", 
+      "Current",  "Completed"))
+
+#qplot(data=loans15, loans15$LoanStatus)+
+#  theme(axis.text.x = element_text(angle = -45, hjust = 0))
+
+ggplot(data=loans15, aes(x=LoanStatus))+
+  geom_histogram()+
+  scale_y_log10()+
+  ylab("Count (log10 scale)")+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))
+
+
+```
+
+Most loans are in good status, 'Current' and 'Completed'.
+
+I will convert EmploymentStatus to a more readable ordered factor.
+```{r  echo=FALSE, Univariate_Plots-order-EmploymentStatus}
+loans15$EmploymentStatus<-ordered(loans15$EmploymentStatus, levels =c("",
+          "Other", "Not available", "Not employed", "Part-time", 
+          "Self-employed", "Full-time", "Employed", "Retired"))
+levels(loans15$EmploymentStatus)
+```
+
+Figure 2
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data=loans15, aes(x=BorrowerRate))+
+  geom_histogram(bin=0.01)
+summary(loans15$BorrowerRate)
+```  
+We see most borrowers have a 'BorrowerRate' of between 0.13 and 0.25. 
+The x-axis was log transformed and sqrt transformed to see if there 
+was a bimodal distribution. There was not a bimodal distribution.
+
+Figure 3
+
+```{r  echo=FALSE, Univariate_Plots-EmploymentStatusDuration}
+p1<-qplot(data=subset(loans15, !is.na(loans15$EmploymentStatusDuration))
+          , x =EmploymentStatusDuration, binwidth=20)+
+  scale_x_continuous(limits=c(0, 600), breaks=seq(0,600,100))
+p2<-qplot(data=loans15, x =log10(EmploymentStatusDuration), binwidth =0.1)
+p3<-qplot(data=loans15, x =sqrt(EmploymentStatusDuration), bin=1)
+
+grid.arrange(p1,p2,p3,ncol=1)
+```
+
+A question for later is does the length of time a person has been working or
+unemployed reflect on their ability to pay back a loan? 
+
+The x-axis was log10 and sqrt transformed. The square root function
+shows more of a bell shaped curve that could be used in modeling.
+
+
+
+##Date Anomaly 
+
+Figure 4
+
+```{r  echo=FALSE, Univariate_Plots-FirstRecordedCreditLine}
+loans15$FirstRecordedCreditLine<-as.Date(loans15$FirstRecordedCreditLine, 
+                                         format='%m/%d/%y %H:%M')
+ggplot(data=loans15, aes(x=FirstRecordedCreditLine))+
+  geom_histogram(bin=365)
+
+```
+
+Above shows most people have their credit history starting form 
+between 1990 and 2010. It also shows an anomaly. We see some 
+people have FirstRecordedCreditLine in the 2060 area. This can't be.
+
+Figure 5
+
+```{r  echo=FALSE, Univariate_Plots-FirstRecordedCreditLine-investigate-anomaly}
+subPost2020_01_01<-subset(loans15, FirstRecordedCreditLine >"2020-01-01")
+subPre2020_01_01<-subset(loans15, FirstRecordedCreditLine <"2020-01-01")
+```
+
+Pre 2020_01_01 loan summary to investigate anomaly:
+```{r  echo=FALSE, Univariate_Plots-FirstRecordedCreditLine-investigate}
+summary(subPre2020_01_01$FirstRecordedCreditLine)
+```
+
+Post 2020_01_01 loan summary to investigate anomaly:
+```{r  echo=FALSE, Univariate_Plots-FirstRecordedCreditLine-investigate-post}
+summary(subPost2020_01_01$FirstRecordedCreditLine)
+```
+
+Using the subset function for dates before and after the date 
+“2020-01-01” shows something that may explain the anomaly. The subset 
+before “2020-01-01” have a range of dates starting on “1969-01-01”. The 
+subset after “2020-01-01” have a range of dates ending on “2068-12-30”. 
+This implies that any dates entered before “1969-01-01” were incorrectly 
+stored as a 2000's date instead of a 1900's date. Whatever the reason is, 
+these anomalous dates will be removed.
+
+Figure 6
+
+```{r  echo=FALSE, Univariate_Plots-FirstRecordedCreditLine-fix-anomaly}
+loans15<-subset(loans15, FirstRecordedCreditLine <"2020-01-01")
+ggplot(data=loans15, aes(x=FirstRecordedCreditLine))+
+  geom_histogram(bin=365)
+```
+
+That's better! Now there are no credit history starting dates near 2060.
+
+Figure 7
+
+```{r  echo=FALSE, Univariate_Plots-LoanOriginationDate}
+loans15$LoanOriginationDate<- as.Date(loans15$LoanOriginationDate,
+                                      format='%m/%d/%y %H:%M') 
+ggplot(data=loans15, aes(x=LoanOriginationDate))+
+  geom_histogram(bin=50)
+```
+
+This LoanOriginationData shows a bimodal distribution. There seems to be 
+no loans originating from late 2008 to early 2009. This is probably related 
+to the market crash. The bin width was reduced to see if there was another 
+break at about 2013. There were no other breaks.
+
+It would be interesting to see if the loans from before 2009-01-01 had a
+default rate different than the loans after 2009. So I will create a 
+factor variable “Jan_2009_loans” with 2 factors “pre2009” and “post2009”.
+```{r  echo=FALSE, Univariate_Plots-LoanOriginationDate-create-Jan_2009_loans}
+loans15$Jan_2009_loans<-NA
+loans15$Jan_2009_loans<-ifelse(loans15$LoanOriginationDate > "2009-01-01",
+                               "post2009", "pre2009")
+loans15$Jan_2009_loans<-factor(loans15$Jan_2009_loans)
+loans15$Jan_2009_loans<-ordered(loans15$Jan_2009_loans, 
+                                levels=c("pre2009","post2009" ))
+```
+
+The count pre2009 and post2009 are:
+```{r  echo=FALSE, Univariate_Plots-LoanOriginationDate-create-Jan_2009_loans-count}
+
+summary(loans15$Jan_2009_loans)
+#Now there are 16 variables.
+loans16<-loans15
+rm(loans15)
+```
+
+I will create a variable ‘CreditHistoryLength’ by subtracting the dates 
+‘FirstRecoredCreditLine’ from the ‘LoanOriginationDate’. 
+
+Figure 8
+
+```{r  echo=FALSE, Univariate_Plots-LoanOriginationDate-create-CreditHistoryLength}
+#I will create a variable ‘CreditHistoryLength’ by subtracting the dates 
+#‘FirstRecoredCreditLine’ from the ‘LoanOriginationDate’.   
+#The new variable ‘CreditHistoryLength’ may allow us to see if a 
+#person with a longer credit history is more or less likely to default 
+#than a person with a shorter credit history.
+
+loans16$CreditHistoryLength<-
+  loans16$LoanOriginationDate-loans16$FirstRecordedCreditLine 
+#We now have 17 variables.
+loans17<-loans16
+#This shows the borrowers credit history length in days. It must 
+#be covered to numeric values so we can graph the distribution.
+loans17$CreditHistoryLength<-as.numeric(loans17$CreditHistoryLength)
+ggplot(data=loans17, aes(x=CreditHistoryLength))+
+  geom_freqpoly(bin=500)+
+  xlab("CreditHistoryLength in days")
+```
+
+We see a peak of CreditHistoryLength at abour 5000 days and some go
+higher than 15000 days( 41 year). 
+
+Most people do not have an 'AmountDelinquent' on any of their 
+loans when they apply for this loan. So many ‘0’s spike the graph 
+at x=0. These were left out here to give a better idea of the distribution of the 
+no zero values.
+
+Figure 9
+
+```{r echo=FALSE,  warning=FALSE, Univariate_Plots-AmountDelinquent}
+#---------+---------+---------+---------+---------+---------+---------+---------+
+ggplot(subset(loans17, AmountDelinquent!=0 & !is.na(AmountDelinquent)),
+       aes(x=AmountDelinquent,y=..count../sum(..count..)))+
+  geom_freqpoly(bin=50)+
+  scale_x_continuous(limits= c(0,
+                               quantile(loans17$AmountDelinquent, 
+                                        probs=0.95, 
+                                        na.rm=TRUE)))
+
+summary(subset(loans17$AmountDelinquent, loans17$AmountDelinquent!=0 & 
+                 loans17$AmountDelinquent <quantile(loans17$AmountDelinquent, 
+                                                    probs=0.99, na.rm=TRUE) ))
+```
+
+Most borrows have less than $900 delinquent on any of the current 
+loans when they apply for these loans.
+
+
+DebtToIncomeRatio have some extreme values.
+```{r echo=FALSE, Univariate_Plots-DebtToIncomeRatio-summary}
+summary(loans17$DebtToIncomeRatio)
+```
+
+The variable definition sheet states that if a borrowers 
+'DebtToIncomeRatio' of above 1000% (10.00) it be entered as 1001%(10.01). 
+These are not outliers. These are real data point with extreme values.
+
+Figure 10
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plots-DebtToIncomeRatio}
+ggplot(subset(loans17, !is.na(DebtToIncomeRatio) & DebtToIncomeRatio<2),
+       aes(x=DebtToIncomeRatio))+
+  geom_histogram(bin=0.03)
+```
+
+Above the DebtToIncomeRatio extreme values were removed to visualize the data.
+
+To visualize the extreme values here is the DebtToIncomeRation 
+data with values greater than 2, on the x-axis.
+
+Figure 11
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plots-DebtToIncomeRatio-less-than-2}
+ggplot(subset(loans17, !is.na(DebtToIncomeRatio) & DebtToIncomeRatio>2),
+       aes(x=DebtToIncomeRatio))+
+  geom_histogram(bin=0.03)
+```
+
+We will look closer to at these extreme values later in the multivariate
+section. 
+
+Figure 12
+
+```{r echo=FALSE, Univariate_Plots-IncomeRange}
+ggplot(loans17, aes(x=IncomeRange))+
+  geom_histogram()+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))
+```
+
+That's hard to read because the amounts are out of order.
+So, I'll make it an ordered factor.
+
+Figure 13
+
+```{r echo=FALSE, Univariate_Plots-order-IncomeRange}
+loans17$IncomeRange <- ordered(loans17$IncomeRange, 
+                               levels = c("Not employed",
+                                          "$0 ", 
+                                          "$1-24,999",
+                                          "$25,000-49,999",
+                                          "$50,000-74,999",
+                                          "$75,000-99,999", 
+                                          "$100,000+",
+                                          "Not displayed"))
+
+ggplot(loans17, aes(x=IncomeRange))+
+  geom_histogram()+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))
+```
+
+
+That's better. The incomes increase from left to right.
+Most people make 25-75,000 dollors, about twice as much as
+the 75-100,000 range.
+
+Figure 14
+
+```{r echo=FALSE, Univariate_Plots-IncomeVerifiable}
+ggplot(loans17, aes(x=IncomeVerifiable))+
+  geom_histogram()
+```
+
+Only a small number of borrowers did not have their income verified.
+We will see if it made a difference in the default or charge off rates.
+
+Figure 15
+
+```{r echo=FALSE, Univariate_Plots-LoanOiginalAmount-graph}
+ggplot(loans17, aes(x=LoanOriginalAmount))+
+  geom_histogram(bin=1000)
+```
+
+Right tail distribution with a median at 6500.
+
+Figure 16
+
+```{r echo=FALSE, Univariate_Plots-LP_NetPrincipalLoss}
+ggplot(subset(loans17, LP_NetPrincipalLoss>0), aes(x=LP_NetPrincipalLoss))+
+  geom_histogram(bin=1000)
+loans17<-subset(loans17, LP_NetPrincipalLoss>=0)
+with(subset(loans17,LP_NetPrincipalLoss>0) , summary(LP_NetPrincipalLoss))
+```
+
+Wow! The Maximun LP_NetPrincipalLoss was $25000 and 25% (above 3rd quantile)
+of the loans, with a loss, have a loss greater than $5793.
+
+New variables:
+
+LoanQuality
+```{r echo=FALSE, Univariate_Plots-create-loanQuality}
+#Creating new variables!
+#1)
+#LoanStatus to LoanQuality.
+#The ‘LoanStatus’ variable is a factor variable. I will create a new column
+#called ‘LoanQuality’ and make an ordered factor variable with 
+#3 levels (‘bad_loans’ < ‘undetermined_loan’  < ‘good_loan’). 
+#‘Defaulted’ loans and ‘Chargedoff’ factors from 'LoanStatus' will 
+#be ‘bad_loans’in the new 'LoanQuality'. 
+#‘Current’ and ‘Completed’ factors will be converted to ‘good_loans’ in the new
+#'LoanQuality'. And all the others will be converted to ‘undetermined_loans’. 
+#By ordering and simplifying the levels maybe we will be able to 
+#notice some trends. 
+
+#This code creates the variable 'LoanQuality'. The code is a modified 
+#version of what we learned in lesson 2 form demystifyingR2.Rmd lines 122 to 130. 
+cond<-(loans17$LoanStatus == "Defaulted" | loans17$LoanStatus == "Chargedoff")
+loans17$LoanQuality <- ifelse(cond, "bad_loan", "undetermined_loan") 
+cond<-(loans17$LoanStatus == "Completed" | loans17$LoanStatus == "Current")
+loans17$LoanQuality <- ifelse(cond, "good_loan", loans17$LoanQuality)
+
+#The above code added a column for a total of 18 so I will change the name
+#to loans18.
+loans18<-loans17
+rm(loans17)
+#This code creates an ordered factor variable.
+loans18$LoanQuality <- ordered(loans18$LoanQuality, 
+                               levels = c("bad_loan", 
+                                          "undetermined_loan",
+                                          "good_loan"))
+summary(loans18$LoanQuality)
+```
+
+A variable LoanQuality was created with 3 ordered factors.
+These factors are bad_loan, undetermined_loan and good_loan.
+
+
+
+I will create a variable AvgULCreditScore, but first I must do some 
+data wrangling to remove outliers.
+```{r echo=FALSE, Univariate_Plots-credit-investigate}
+summary(loans18$CreditScoreRangeLower)
+summary(loans18$CreditScoreRangeUpper)
+#These only have 591 NA's out of 113937 loans. 
+#I see a different problem. The summary function shows a low of 0 for the 
+#CreditScoreRangeLower.  Also, it shows a low of 19 for 
+#CreditScoreRangeUpper. 
+#nrow(subset(loans18, CreditScoreRangeLower == 0 ))
+#nrow(subset(loans18, CreditScoreRangeUpper == 19))
+#---------+---------+---------+---------+---------+---------+---------+---------+
+#After further investigation I realized there
+#are 73 data points with a low and high score of 0 and 19.  
+#The next highest numbers are in the mid 300 ranges.
+#Zero for a low and 19 for high credit range sounds way off for a credit 
+#score. I looked on Google to see if it is possible to have 
+#a credit score of zero.  It is possible. It may mean you haven't had
+#debt in five year. It doesn’t mean you’re a bad spender or saver like 
+#a person with a score of 350. I found nothing about a credit score of 19. 
+#So, for our purposes of looking for trends in ability to pay back a loan
+#these 73 data point will not be informative. 
+#I will remove these 73 outliers. I will aslo remove the 591 NA's.
+```
+
+After further investigation I realized there
+are 73 data points with a low and high score of 0 and 19.  
+The next highest numbers are in the mid 300 ranges. Therefore these odd scores
+removed.
+
+Figure 17
+
+```{r echo=FALSE, Univariate_Plots-outliers}
+#This code removes the 73 outliers and the 591 NA's.
+loans18<-subset(loans18, CreditScoreRangeLower !=0 & 
+                CreditScoreRangeUpper != 19 & !is.na(CreditScoreRangeLower))
+#This code uses the transform function to creates a new called  
+#'AvgULCreditScore' which is the average of the upper and lower credit
+#score ranges. Since it adds a column for a total of 18 the results
+#are saved in data frame named 'loans18'.
+loans19<-transform(loans18, 
+                   AvgULCreditScore=((loans18$CreditScoreRangeUpper+
+                                        loans18$CreditScoreRangeLower)/2))
+rm(loans18)
+
+ggplot(loans19, aes(x=AvgULCreditScore))+
+  geom_histogram(bin=30)
+```
+
+An 'AvgULCreditScore' variable was created by removing outliers and 
+averaging 'CreditScoreRangeLower' and 'CreditScoreRangeUpper'.
+
+```{r echo=FALSE, Univariate_Plots-AvgCtedit}
+loans19$CreditScore.bucket<-cut(loans19$AvgULCreditScore, 
+                                breaks=c(300,400,500,600,700,800))
+loans20<-loans19
+rm(loans19)
+table(loans20$CreditScore.bucket)
+```
+A variable CreditScore.bucket was created.
+```{r echo=FALSE, Univariate_Plots-CreditScore.bucket}
+#Let’s remove columns we don’t need. We 
+#created the    ‘AvgULCreditScore’ variable by averaging the
+#CreditScoreRangeLower’ and ‘CreditScoreRangeUpper’ variables. 
+#So these to can be removed. The new variable 'CreditHistoryLength' 
+#can replace 'FirstRecordedCreditLine' and this will be removing 3
+#columns leave a total of 17 columns. So, I will name the new 
+#data frame 'loans15'.
+loans17<-subset(loans20, select= -c(CreditScoreRangeLower, 
+                                    CreditScoreRangeUpper,
+                                    FirstRecordedCreditLine ))
+rm(loans20)
+#str(loans17)
+```
+
+The new variable "profit" was created by multiplying BorrowerRate and 
+LoanOriginalAmount.
+```{r echo=FALSE, Univariate_Plots-CreditScore.bucket-summary}
+loans17$profit<-as.integer(loans17$BorrowerRate*loans17$LoanOriginalAmount)
+summary(loans17$profit)
+```
+# Univariate Analysis
+
+### What is the structure of your dataset? 
+The dataset is a data frame and has 15 variables selected from the 81
+variables from the 'prosperLoanData.csv'. 5 are continuous int variables,
+5 are continuous, 2 are factor variables, 2 are date format variables
+and one logic variable. There are 113937 rows or data points. 
+Each representing a single loan.
+### What is/are the main feature(s) of interest in your dataset?
+I'm interested in trying to find out what criteria were used 
+to approve loans and  how the interest rate was determined. Additionally, 
+I will look for factors that are common in bad loans and good loans. 
+
+### What other features in the dataset do you think will help support 
+###your investigation into your feature(s) of interest?
+
+The BorrowerRate variable will be use to find correlations or trends 
+with other variables. This may give us information about how the interest
+rate was determined. 
+
+LoanStatus will be a main feature that will help me determine good verses 
+bad loans. The main factors that will help determine good loans are 
+'Completed' and 'Current' form the LoanStatus variable. And the
+factors that determine bad loans are 'Chargedoff' and 'default'. 
+LoanQulaity variable was derived from these LoanStatus variable factors.
+
+LoanQuality, LP_NetPrincipalLoss and profit variables will be used to 
+find factors related to good loans and bad loans. 
+
+LP_NetPrincipalLoss shows if a borrower has a net loss of principal. 
+
+So LoanQuality, LP_NetPrincipalLoss and profit will be used to evaluate 
+which of the other variables  are or are not used to determine if 
+a loan is granted. Also, which loans pay back principal 
+and interest.
+
+### Did you create any new variables from existing variables in the dataset?
+1) I created a new variable 'LoanQuality' from the 'LaonStatus' variable.
+The factors 'Completed' and 'Current' form the LoanStatus variable will be 
+the factor 'good_laons' in the new 'LoanQuality' variable. Also, the 
+factors 'Chargedoff' and 'default' from 'LoanStatus' will be 'bad_loans' 
+in the 'LoanQuality' variable. 
+
+2) I averaged 'CreditScoreRangeLower' and 'CreditScoreRangeUpper' to
+create a variable 'AvgULCreditScore', but first I removed outliers
+from both variables.
+3) I created a variable ‘CreditHistoryLength’ by subtracting the dates 
+‘FirstRecoredCreditLine’ from the ‘LoanOriginationDate’.   The new 
+variable ‘CreditHistoryLength’ may allow us to see if a person with a 
+long credit history at the time of the loan is more or less likely to
+default than a person with a short credit history.
+4) It would be interesting to see if the loans from before 2009-01-01
+had a default rate different than the loans after 2009. So I will create a 
+factor variable 'Jan_2009_loans' with 2 factors “pre2009” and “post2009”. 
+This is described more below.
+
+5) A CreditScore.bucket was created.
+
+6) Also, 'NoNetLoss' was created from LP_NetPrincipalLoss. If LP_NetPrincipalLoss
+is zero NoNetLoss would be TRUE. If LP_NetPrincipalLoss is greater than zero then 
+NoNetLoss would be false.
+
+7) A variable "profit" was created by multiplying LoanOriginalAmount
+and BorrowerRate.
+
+New variables:
+'LoanQuality'
+'AvgULCreditScore'
+‘CreditHistoryLength’
+'Jan_2009_loans'
+'CreditScore.bucket'
+'NoNetLoss'
+'profit'
+
+### Of the features you investigated, were there any unusual distributions? 
+The LoanOriginationData show a bimodal distribution. 
+There seems to be no loans originating from late 2008 to early 2009. 
+This was probably caused by the market crash.
+It would be interesting to see if the loans from before 2009-01-01 
+had a default rate different than the loans after 2009-01-01!!
+
+FirstRecordedCreditLine had an anomoly were dates added before 1/1/1969
+were entered as 2000's year instead of 1900's. These dates were removed.
+
+###Did you perform any operations on the data to tidy, adjust, or change 
+###the form of the data? If so, why did you do this?
+
+1)The 'FirstRecordedCreditLine' variable shows most people have their 
+credit history starting form between 1990 and 2010. It also shows an 
+anomaly. We see some people have FirstRecordedCreditLine in the 2060 area.
+This can't be.
+
+Using the subset function for dates before and after the date “2020-01-01”
+shows something that may explain the anomaly. The subset before 
+“2020-01-01” have a range of dates starting on “1969-01-01”. The subset 
+after “2020-01-01” have a range of dates ending on “2068-12-30”. This 
+implies that any dates entered before “1969-01-01” were incorrectly 
+stored as a 2000's date instead of a 1900's date. Whatever the reason 
+is, these anomalous dates will be removed.
+
+2)I converted the IncomeRange, LoanStatus, EmploymentStatus variable to an 
+ordered factor. I did this to make these easier to read with the 
+factors going from left to right with improvment.
+
+3)CreditGrade, was removed.
+84984/113937 Unusual distribution.
+The summary function shows that the ‘CreditGrade’ variable has 84984 blank or
+NA’s.  The Variable Definitions sheet that came with this data set defines
+‘CreditGrade’ as  “The Credit rating that was assigned at the time the
+listing went live. Applicable for listings pre-2009 period and will only be
+populated for those listings.”  This explains that most of the 
+data(84984 loans) are post 2009 and not populated with this credit grade.
+That is 74.6% of the 113937 loans in this data set. Therefore, this 
+‘CreditGrade’ variable is not a good representation of the borrowers credit
+for this data set and will not be used. 
+
+# Bivariate Plots Section
+```{r echo=FALSE, Bivariate_Plots}
+#---------+---------+---------+---------+---------+---------+---------+---------+
+#BorrowerRate BORROWERRATE
+```
+
+1)BorrowerRate
+
+Let's see if we can find some of the factors that may have been used 
+to determine rate(BorrowersRate). 
+
+Figure 18
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data=loans17, aes(x=BorrowerRate, y=LoanOriginalAmount))+
+  geom_point(alpha=1/20)+
+  geom_smooth(method='lm', color = 'red')
+#cor.test(loans17$BorrowerRate, loans17$LoanOriginalAmount,method= "pearson")
+```
+There is a significant negative corrleation (-0.331) between BorrowerRate 
+and LoanOriginalAmount. There is a correlation but I don't think 
+the bank would give a lower rate just because you asked for a
+big loan. Overplotting was corrected with an alpha of 0.05.
+
+Figure 19
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17, loans17$EmploymentStatusDuration>0),
+       aes(y=BorrowerRate, x=EmploymentStatus))+
+  geom_boxplot()+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))
+```
+
+No trends visible. The "Not employed" factor has a high rate. 
+An employment status of "Not employed" was probably used to determine
+BorrowerRate.
+
+Figure 20
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#---------+---------+---------+---------+---------+---------+---------+---------+
+ggplot(subset(loans17, DebtToIncomeRatio< 
+                  quantile(loans17$DebtToIncomeRatio, probs=0.99, na.rm=TRUE))
+ , aes(x=BorrowerRate,  y=DebtToIncomeRatio))+
+  geom_point(alpha=1/20)+
+  scale_x_continuous(limits=c(0.07,0.35 ))+
+  scale_y_continuous(limits=c(0,1.25 ))+
+  coord_trans(x='sqrt')+
+  geom_smooth(method='lm', color='red')
+
+  with(subset(loans17, DebtToIncomeRatio< quantile(loans17$DebtToIncomeRatio,
+                           probs=0.99,
+                           na.rm=TRUE)),
+       cor.test(BorrowerRate, x=DebtToIncomeRatio))
+```  
+A small correlation 0.167 for DebtToIncomeRatio may be taken into account in
+determining BorrowerRate
+
+AmountDelinquent,StatedMonthlyIncome or CreditHistoryLength did 
+not show any significant relationship to BorrowerRate.
+
+Figure 21
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data=loans17, aes(y=BorrowerRate, x=IncomeVerifiable))+
+  geom_boxplot()
+#with(loans17, by(BorrowerRate,IncomeVerifiable, median))
+```
+It seems that if a borrower did not verify their income the interest
+rate median was 0.04 percent higher. This was probably a factor in determining
+interest rate.
+
+Figure 22
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data=loans17, aes(y=BorrowerRate, x=IncomeRange))+
+  geom_boxplot()
+```
+
+There is a trend from low income range $1-24,999 to high income range $100000+.
+The trend is lower interest rates as income increases.
+
+2) LP_NetPrincipalLoss
+
+The LP_NetPrincipalLoss variable values are entered after the loan started. 
+So this will not be used for determining interest rates. If 
+there was a default and a charge off the amount would be entered as 
+LP_NetPrincipalLoss. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+nrow(subset(loans17, LP_NetPrincipalLoss>0))
+nrow(subset(loans17, LP_NetPrincipalLoss>=0))
+```
+Only 16266 out 112567 have a LP_NetPrincipalLoss greater than zero.
+That leaves 96301 that have an LP_NetPrincipalLoss equal to zero.
+There were some negative outliers that will be removed.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+with(subset(loans17, LP_NetPrincipalLoss>0) ,summary(LP_NetPrincipalLoss))
+```
+The median of the none zero values of LP_NetPrincipalLoss is 3294 with a 
+max of 25000!
+ 
+Figure 23
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#"LP_NetPrincipalLoss" PART 2 (Bivariate)
+ggplot(subset(loans17,  loans17$LP_NetPrincipalLoss >0 &
+                !is.na(loans17$CreditHistoryLength)),
+      aes(x=CreditHistoryLength, y=LP_NetPrincipalLoss))+
+  geom_point()+
+  geom_smooth(method='lm', color='red')
+```
+
+There is a lot of over plotting and the data is spread out on the y axis. 
+So I will use an alpha of 0.1 and transform the y axis to square root.
+
+Figure 24
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17, LP_NetPrincipalLoss>0 & 
+                !is.na(loans17$CreditHistoryLength)),
+       aes(x=CreditHistoryLength, y=LP_NetPrincipalLoss))+
+  geom_point(alpha=1/10)+
+  coord_trans(y='sqrt')+
+  geom_smooth(method='lm', color = 'red')
+```
+
+Let's see the median NetPrincipalLoss by day or days of credit history. 
+The range of CreditHistoryLength is 19 to 16479 days with an median of 
+5706 days (15.6 years).  
+
+I'm going to make variables with different size bins( one day, 
+one month, 3 months, one year, 5 years) for CreditHistoryLength
+to pick the graph with the best bias variance balance.
+
+Figure 25
+
+```{r echo=FALSE, fig.height=10, message=FALSE, warning=FALSE}
+loans17$CreditHistoryLength_days<-loans17$CreditHistoryLength
+loans17$CreditHistoryLength_months<-round(
+  loans17$CreditHistoryLength/31)*31
+loans17$CreditHistoryLength_3months<-round(
+  loans17$CreditHistoryLength/(31*3))*(31*3)
+loans17$CreditHistoryLength_years<-round(
+  loans17$CreditHistoryLength/365)*365
+loans17$CreditHistoryLength_5years<-round(
+  loans17$CreditHistoryLength/(365*5))*(365*5)
+
+loans17.NetLoss_by_HistoryDays<- subset(loans17,
+                                loans17$LP_NetPrincipalLoss >0 &
+                                !is.na(loans17$CreditHistoryLength_days)) %>%
+  group_by(CreditHistoryLength_days) %>%
+  summarise(LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+          LP_NetPrincipalLoss_median = median(LP_NetPrincipalLoss),
+          n=n()) %>%
+  arrange(CreditHistoryLength_days)
+
+c1<-ggplot(loans17.NetLoss_by_HistoryDays, 
+            aes(x=CreditHistoryLength_days,
+          y=LP_NetPrincipalLoss_median))+
+  geom_line()+
+  ylab("Median Loss")+
+  geom_smooth()
+
+loans17.NetLoss_by_HistoryMonths<- subset(loans17,
+                                    loans17$LP_NetPrincipalLoss >0 &
+                                  !is.na(loans17$CreditHistoryLength_months)) %>%
+  group_by(CreditHistoryLength_months) %>%
+  summarise(LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+          LP_NetPrincipalLoss_median = median(LP_NetPrincipalLoss),
+          n=n()) %>%
+  arrange(CreditHistoryLength_months)
+
+c2<-ggplot(loans17.NetLoss_by_HistoryMonths , 
+           aes(x=CreditHistoryLength_months, y=LP_NetPrincipalLoss_median))+
+  geom_line()+
+  ylab("Median Loss")+
+  geom_smooth()
+
+loans17.NetLoss_by_History3Months<- subset(loans17,
+                                           loans17$LP_NetPrincipalLoss >0 &
+                                !is.na(loans17$CreditHistoryLength_3months)) %>%
+  group_by(CreditHistoryLength_3months) %>%
+  summarise(LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+          LP_NetPrincipalLoss_median = median(LP_NetPrincipalLoss),
+          n=n()) %>%
+  arrange(CreditHistoryLength_3months)
+
+c3<-ggplot(loans17.NetLoss_by_History3Months , 
+           aes(x=CreditHistoryLength_3months, y=LP_NetPrincipalLoss_median))+
+  geom_line()+
+  ylab("Median Loss")+  
+  geom_smooth()
+#---------+---------+---------+---------+---------+---------+---------+---------+
+loans17.NetLoss_by_HistoryYears<- subset(loans17,
+                                         loans17$LP_NetPrincipalLoss >0 
+                                & !is.na(loans17$CreditHistoryLength_years)) %>%
+  group_by(CreditHistoryLength_years) %>%
+  summarise(LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+          LP_NetPrincipalLoss_median = median(LP_NetPrincipalLoss),
+          n=n()) %>%
+  arrange(CreditHistoryLength_years)
+
+c4<-ggplot(loans17.NetLoss_by_HistoryYears,
+           aes(x=CreditHistoryLength_years, y=LP_NetPrincipalLoss_median))+
+  geom_line()+
+  ylab("Median Loss")+ 
+  geom_smooth()
+
+loans17.NetLoss_by_History5Years<- subset(loans17,
+                                          loans17$LP_NetPrincipalLoss >0 &
+                              !is.na(loans17$CreditHistoryLength_5years)) %>%
+  group_by(CreditHistoryLength_5years) %>%
+  summarise(LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+          LP_NetPrincipalLoss_median = median(LP_NetPrincipalLoss),
+          n=n()) %>%
+  arrange(CreditHistoryLength_5years)
+
+c5<-ggplot(loans17.NetLoss_by_History5Years , aes(x=CreditHistoryLength_5years,
+                                                  y=LP_NetPrincipalLoss_median))+
+  geom_line()+
+  ylab("Median Loss")+ 
+  geom_smooth()
+
+grid.arrange(c1,c2,c3,c4,c5, ncol=1)
+```
+
+I like the 4th graph best. It gives a good representation of the overall 
+data and not to much noise.
+
+There seems to be 3 parts to this graph.  The first third of the 
+x axis  increase slowly then levels off for the middle third and then increases 
+sharply for the last third.
+
+This seems to counter intuitive. I would have thought if a borrower had a 
+longer credit history they would better able to pay of their loans in full. 
+
+Figure 26
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17,LP_NetPrincipalLoss>0), 
+       aes(x=LoanOriginalAmount, y=LP_NetPrincipalLoss))+
+  geom_point(alpha=1/20, position=position_jitter(h=0))
+```
+
+This show how much of the LoanOriginalAmount is lost if LP_NetPrincipalLoss>0.
+
+
+What is the median LP_NetPrincipalLoss by LoanOriginalAmount?
+
+Figure 27
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+NetLoss_by_LoanAmount<-group_by(subset(loans17, LP_NetPrincipalLoss>0),
+                                LoanOriginalAmount)
+loans17.NetLoss_by_LoanAmount<-summarise(NetLoss_by_LoanAmount,
+                          LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+                          LP_NetPrincipalLoss_median=median(LP_NetPrincipalLoss),
+                          n=n())
+loans17.NetLoss_by_LoanAmount<- arrange(loans17.NetLoss_by_LoanAmount,
+                                        LoanOriginalAmount)                                      
+      
+ggplot(aes(LoanOriginalAmount,LP_NetPrincipalLoss_median),
+       data=loans17.NetLoss_by_LoanAmount)+
+  geom_line()
+```
+
+Above was created with unchained functions. This time I will 
+chain the functions and try different size bins to see which makes the 
+data easiest to understand.
+
+Figure 28
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#same as above but chained functions and making LoanOriginalAmount 
+#dollar
+#1000dollars
+#10000dollars
+#mean or median summarises
+loans17$LoanOriginalAmount_dollar<-loans17$LoanOriginalAmount
+loans17$LoanOriginalAmount_500dollars<-
+  round(loans17$LoanOriginalAmount/500)*500
+loans17$LoanOriginalAmount_1000dollars<-
+  round(loans17$LoanOriginalAmount/1000)*1000
+loans17$LoanOriginalAmount_10000dollars<-
+  round(loans17$LoanOriginalAmount/10000)*10000
+
+#dollars
+loans17.NetLoss_by_LoanAmountDollars<-subset(loans17,
+                                             loans17$LP_NetPrincipalLoss>0)%>%
+  group_by(LoanOriginalAmount_dollar)%>%
+  summarise(LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+                          LP_NetPrincipalLoss_median=median(LP_NetPrincipalLoss),
+                          n=n())%>%
+  arrange(LoanOriginalAmount_dollar)
+#head(loans17.NetLoss_by_LoanAmountDollars)
+
+pN1<-ggplot(loans17.NetLoss_by_LoanAmountDollars, 
+            aes(x=LoanOriginalAmount_dollar, y=LP_NetPrincipalLoss_median ))+
+  geom_line()
+
+#500dollars
+loans17.NetLoss_by_LoanAmount500Dollars<-
+  subset(loans17, loans17$LP_NetPrincipalLoss>0)%>%
+  group_by(LoanOriginalAmount_500dollars)%>%
+  summarise(LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+                          LP_NetPrincipalLoss_median=median(LP_NetPrincipalLoss),
+                          n=n())%>%
+  arrange(LoanOriginalAmount_500dollars)
+
+
+
+#head(loans17.NetLoss_by_LoanAmount500Dollars)
+
+pN2<-ggplot(loans17.NetLoss_by_LoanAmount500Dollars,
+            aes(x=LoanOriginalAmount_500dollars, 
+                y=LP_NetPrincipalLoss_median ))+
+  geom_line()
+#1000dollars
+loans17.NetLoss_by_LoanAmount1000Dollars<-
+  subset(loans17, loans17$LP_NetPrincipalLoss>0)%>%
+  group_by(LoanOriginalAmount_1000dollars)%>%
+  summarise(LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+                          LP_NetPrincipalLoss_median=median(LP_NetPrincipalLoss),
+                          n=n())%>%
+  arrange(LoanOriginalAmount_1000dollars)
+
+#head(loans17.NetLoss_by_LoanAmount1000Dollars)
+
+pN3<-ggplot(loans17.NetLoss_by_LoanAmount1000Dollars,
+            aes(x=LoanOriginalAmount_1000dollars, 
+                y=LP_NetPrincipalLoss_median ))+
+  geom_line()
+
+#10000dollars
+loans17.NetLoss_by_LoanAmount10000Dollars<-subset(loans17, 
+                                              loans17$LP_NetPrincipalLoss>0)%>%
+  group_by(LoanOriginalAmount_10000dollars)%>%
+  summarise(LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+                          LP_NetPrincipalLoss_median=median(LP_NetPrincipalLoss),
+                          n=n())%>%
+  arrange(LoanOriginalAmount_10000dollars)
+
+#head(loans17.NetLoss_by_LoanAmount10000Dollars)
+
+pN4<-ggplot(loans17.NetLoss_by_LoanAmount10000Dollars, 
+            aes(x=LoanOriginalAmount_10000dollars,
+                y=LP_NetPrincipalLoss_median ))+
+  geom_line()
+
+grid.arrange(pN1, pN2, pN3, pN4, ncol=1)
+#cor.test(loans17$LoanOriginalAmount,loans17$LP_NetPrincipalLoss)
+#r=0.127
+```
+
+I like the bin size of $500. Not to much noise and gives a good overview of
+the data.
+
+Now I will use stat summary to super impose this over the original data.
+
+Figure 29
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17,LP_NetPrincipalLoss>0), 
+       aes(x=round(LoanOriginalAmount/500)*500, y=LP_NetPrincipalLoss))+
+  geom_point(alpha=1/20, position=position_jitter(h=0), color='orange')+
+  geom_line(stat='summary',fun.y=median)
+```
+
+This shows that if a loans has a non zero LP_NetPrincipalLoss most the
+loans loses are more than half the original value! This only showed a 
+correlation of r=0.127.
+
+Figure 30
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17,LP_NetPrincipalLoss>0 & 
+                !is.na(CreditScore.bucket)),
+       aes(x=CreditScore.bucket, y=LP_NetPrincipalLoss))+
+  geom_boxplot()+
+    ylim(0, quantile(loans17$LP_NetPrincipalLoss, 0.95, na.rm=TRUE))
+```
+
+The CreditScore.bucket has an upward trend with LP_NetPrincipalLoss.
+This probably means that borrowers with good credit can borrow large 
+amounts and have a higher median LP_NetPrincipalLoss. 
+
+3)AvgUlCreditScore
+
+Figure 31
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17, LP_NetPrincipalLoss>0), 
+       aes(x=AvgULCreditScore, y=LP_NetPrincipalLoss))+
+  geom_point(alpha=1/20 ,position=position_jitter(h=0))
+```
+
+With an alpha of 0.01 and jitter(h=0) this trend is visible on this
+scatter plot too. 
+
+What is the median LP_NetPrincipalLoss for the different AvgULCreditScore?
+
+Figure 32
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+loans17.NetLoss_by_Credit<- subset(loans17,  loans17$LP_NetPrincipalLoss >0 &
+  !is.na(loans17$AvgULCreditScore)) %>%
+  group_by(AvgULCreditScore) %>%
+  summarise(LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+          LP_NetPrincipalLoss_median = median(LP_NetPrincipalLoss),
+          n=n()) %>%
+  arrange(AvgULCreditScore)
+
+ggplot(loans17.NetLoss_by_Credit,
+    aes(x=AvgULCreditScore, y=LP_NetPrincipalLoss_median))+
+    geom_line()
+```
+
+This is informative. The median LP_NetPrincialLoss increases as 
+CreditScore goes up to 850 then it drops sharply.  
+
+
+The below graph show the median line over the original scatter plot.
+
+Figure 33
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#the basic data from above
+ggplot(subset(loans17, LP_NetPrincipalLoss>0) , 
+       aes(x=AvgULCreditScore, y=LP_NetPrincipalLoss))+
+  geom_point(alpha=1/20, position=position_jitter(h=0))+
+  geom_line(stat='summary', fun.y=median, color='red')
+```
+
+
+Let's look at the same graph but with sum instead of median.
+
+Figure 34
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#---------+---------+---------+---------+---------+---------+---------+---------+
+#sum
+ggplot(subset(loans17, LP_NetPrincipalLoss>0) , 
+       aes(x=AvgULCreditScore, y=LP_NetPrincipalLoss))+
+  geom_point(alpha=1/20, position=position_jitter(h=0))+
+  geom_line(stat='summary', fun.y=sum, color='red')
+```
+
+This shows the sum of net principal loss by Credit Score.
+It shows losses peak at a credit score of about 650 to 700. 
+But the highest median was at 850. This implies there were more loans
+at a credit score of 650 to 700 than 850. Let's see if this is true.
+
+Figure 35
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(loans17, aes(AvgULCreditScore))+
+geom_histogram(bin=30)
+```
+
+This confirms it. Loans count peaks at the high 600's.
+
+LP_NetPrincipalLoss measures if a loan is bad(LP_NetPrincipalLoss>0) and how bad 
+it is( the amount of LoanOriginalAmount). This makes me wonder which 
+credit scores makes the most profit(Borrower rate * OriginalLoanAmount, 
+if and only if there is no default) and loss and how much.
+
+Which loans make more money? If a loan has a LP_NetPrincipalLoss 
+value of zero this means the 
+principal is being, or has been, paid back with interest. The bigger the 
+loan and the higher the interest rate the more profit. So BorrowerRate 
+multiplied by LoanOriginalAmount will roughly give the profit per loan. Let's
+see what factors affect profit.
+
+4)Profit
+
+Figure 36 Mean Overlay
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+loans17$profit<-as.integer(loans17$BorrowerRate*loans17$LoanOriginalAmount)
+
+ggplot(subset(loans17, LP_NetPrincipalLoss==0) , 
+       aes(x=AvgULCreditScore, y=profit))+
+  geom_point(alpha=1/40, position=position_jitter(h=0))+
+  geom_line(stat='summary', fun.y=mean, color='red')
+```
+
+Figure 37 Sum Overlay
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+#profit sum
+ggplot(subset(loans17, LP_NetPrincipalLoss==0) , 
+       aes(x=AvgULCreditScore, y=profit))+
+  geom_point(alpha=1/40, position=position_jitter(h=0))+
+  geom_line(stat='summary', fun.y=sum, color='red')
+```
+
+Since there are many loans the sum(red line) dwarfs the mean profits.
+The previous median graph had the highest value about 7000, the highest value
+on this graph of sum of the profit is 20,000,000. So the individual profit values turns into the black line at the bottom of  this graph.
+
+This graph shows most profit is from loans between 650 and 750 credit score.
+
+Which CreditScore makes the most NetProfit(profit - loss)?
+I will create a new variable:
+Net_profit = profit - LP_NetPrincipalLoss
+Net_profit BY AvgULCreditScore
+
+Figure 38
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cond<-loans17$LP_NetPrincipalLoss==0
+loans17$NetProfit<-ifelse(cond, loans17$profit, 
+                          loans17$profit-loans17$LP_NetPrincipalLoss )
+ggplot(loans17, aes(x=AvgULCreditScore,y= NetProfit))+
+  geom_point(alpha=1/50, position = "jitter")+
+  scale_color_brewer(type='div',
+                     guide=guide_legend(title='LoanQuality',
+                                        reverse=FALSE, 
+                                        override.aes=list(alpha=1, size=2)))+
+  geom_line(stat='summary', fun.y=median, color='red')+
+  theme(strip.text.y = element_text(angle=0))
+```
+
+You can see that the median NetProfit for all loans less than 
+a credit score of 520 are negitive! 
+Lets zoom in to see which credit score makes the most NetProfit.
+
+Figure 39
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cond<-loans17$LP_NetPrincipalLoss==0
+loans17$NetProfit<-ifelse(cond, loans17$profit, 
+                          loans17$profit-loans17$LP_NetPrincipalLoss )
+ggplot(loans17, aes(x=AvgULCreditScore,y= NetProfit))+
+  geom_point(alpha=1/50, position = "jitter")+
+  scale_color_brewer(type='div',
+                     guide=guide_legend(title='LoanQuality',
+                                      reverse=FALSE, 
+                                      override.aes=list(alpha=1, size=2)))+
+  geom_line(stat='summary', fun.y=median, color='red')+
+  theme(strip.text.y = element_text(angle=0))+
+  coord_cartesian(ylim=c(-2000, +2000))
+```
+
+This shows the credit scores that make the most net profit are 690 to about 740.
+We will look at these variable later in the multivariant section and compare 
+loans pre 2009 to post 2009.
+
+4)Loan Quality
+Now lets compare LoanQuality to some of the other variable and see if we
+find any trends.
+
+Figure 40
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17, AmountDelinquent>0 &
+               !is.na(LoanQuality) &
+                !is.na(CreditScore.bucket) &
+                !is.na(AmountDelinquent)), 
+       aes(x=LoanQuality, y=AmountDelinquent))+
+  geom_boxplot()+
+  ylim(0,quantile(loans17$AmountDelinquent,probs=0.95,na.rm=TRUE))
+```
+
+The 'AmountDelinquent' variable represents the amount delinquent the borrower 
+is  on all other loans at the time the borrower is applying for this loan.
+The bad_loan level of LoanQuality variable has a slightly higher median amount
+delinquent than good_loan. Let's zoom in.
+ 
+Figure 41 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17, AmountDelinquent>0), 
+       aes(x=LoanQuality,
+           y=AmountDelinquent))+
+  geom_point(stat='summary', fun.y=median, color='blue')+
+  ylab("AmountDelinwuent Median")
+with(subset(loans17, AmountDelinquent>0),
+     by(AmountDelinquent, LoanQuality, median))
+```
+This figure show the median of each loanQuality group.
+This figure and the median statistic show about a 20% difference 
+in the median for the good and bad loans.  Therefore AmountDelinquent may 
+have an effect on ability to pay of a loan.
+
+Figure 42
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(loans17, aes(x=LoanQuality, y=StatedMonthlyIncome))+
+  geom_boxplot()+
+  ylim(0,quantile(loans17$StatedMonthlyIncome,probs=0.95,na.rm=TRUE))
+with(subset(loans17, StatedMonthlyIncome>0), 
+     by(StatedMonthlyIncome, LoanQuality, median))
+```
+
+The median difference betweem good loans and bad loans for the 
+variable StatedMonthlyIncome is $1250.
+
+Figure 43
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(loans17, aes(x=LoanQuality, y=LoanOriginalAmount))+
+  geom_boxplot()+
+  ylim(0,quantile(loans17$LoanOriginalAmount,probs=0.95,na.rm=TRUE))
+```
+
+This has a significant difference in medians between good and bad loans.
+This is probably due to bigger loans require better credit and a higher
+monthly income. Therefore bigger loan amounts have a lower default or chargeOff. 
+
+Hummm. Lower percent default and chargeoff. How can we calculate percent 
+default and chargeoff? We could use percent bad_loans.  
+
+Figure 44
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(loans17, aes(x=LoanQuality, y=CreditHistoryLength))+
+  geom_boxplot()+
+  ylim(0,quantile(loans17$CreditHistoryLength,probs=0.95,na.rm=TRUE))
+with(subset(loans17, CreditHistoryLength>0), by(CreditHistoryLength,
+                                                LoanQuality, median))
+#median difference 952
+#5838-4886
+```
+
+good_loan have a 952 higher median than bad_loan. This implies people with a
+longer credit history are more likely to have a good_loan.
+
+Figure 45
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(loans17, aes(x=LoanQuality, y=AvgULCreditScore))+
+  geom_boxplot()+
+  coord_cartesian(ylim=c(600, 750))
+
+with(subset(loans17, AvgULCreditScore>0), by(AvgULCreditScore,
+                                             LoanQuality, median))
+```
+
+40 point creidt score difference. Not suprising borrowers with better 
+credit scores are more likely to pay back loans.
+ 
+Figure 46
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17, DebtToIncomeRatio>0), aes(x=LoanQuality,
+                                                 y=DebtToIncomeRatio))+
+  geom_boxplot()+
+  ylim(0,quantile(loans17$DebtToIncomeRatio,probs=0.95,na.rm=TRUE))
+```
+
+This shows when the outliers are removed the medians are much closer. 
+
+5)High Correlation
+
+Now let's take a closer look at some variables with a higher correlation.
+
+First AvgULCreditScore and BorrowerRate.
+
+Figure 47
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+ggplot(loans17, aes(x=AvgULCreditScore, y=BorrowerRate))+
+  geom_point(alpha=1/40, position=position_jitter(h=0))
+
+#cor.test(loans17$AvgULCreditScore,loans17$BorrowerRate)
+```
+
+An alpha of 1/40 helps visualize the data.
+This is the highest correlation we have seen so far(r=-0.488). If you 
+have good credit you are more likely to get a lower interest rate 
+(BorrowersRate). 
+
+This could explain the graph above with better rates for larger loans. 
+It's not the larger loan, it the borrowers good credit score.
+
+What is the median BorrowerRate as credit score increases?
+
+Figure 48
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+loans17.Rate_by_Score<-loans17%>%
+  group_by(AvgULCreditScore)%>%
+  summarise(BorrowerRate_mean=mean(BorrowerRate),
+            BorrowerRate_median=median(BorrowerRate),
+            n=n())%>%
+  arrange(AvgULCreditScore)
+
+#head(loans17.Rate_by_Score)
+
+#ggplot(loans17.Rate_by_Score, aes(x=AvgULCreditScore, y=BorrowerRate_median ))+
+#  geom_line()
+
+ggplot(loans17, aes(x=AvgULCreditScore, y=BorrowerRate))+
+  geom_point(alpha=1/40, position=position_jitter(h=0),color='orange')+
+  geom_line(stat= 'summary', fun.y=median)
+```
+
+This shows as CreditScore increases the median BorrowerRate decreases.
+
+Next AvgULCreditScore and LoanOriginalAmount
+
+Figure 49
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(loans17, aes(x=AvgULCreditScore, y=LoanOriginalAmount))+
+  geom_point(alpha=1/40, position=position_jitter(h=0),color='orange')
+```
+
+As credit score increases the original loan amount increases.
+Also, only credit scores above 700 get loan between $25,000-$35,000. This 
+implies that credit score is taken into account when granting a loan.
+The correlation of AvgULCreditScore and LoanOriginalAmount is 0.3519.
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cor.test(loans17$AvgULCreditScore,loans17$LoanOriginalAmount)
+```
+
+
+Figure 50
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#loans17$AvgULCreditScore<-as.integer(loans17$AvgULCreditScore)
+#loans17$LoanOriginalAmount<-as.integer(loans17$LoanOriginalAmount)
+
+#loans17$AvgULCreditScore<-as.numeric(loans17$AvgULCreditScore)
+#loans17$LoanOriginalAmount<-as.integer(loans17$LoanOriginalAmount)
+
+loans17.Amount_by_Score<-loans17%>%
+  group_by(AvgULCreditScore)%>%
+  summarise(LoanOriginalAmount_mean=mean(LoanOriginalAmount),
+            LoanOriginalAmount_median=median(as.numeric(LoanOriginalAmount)),
+            n=n())%>%
+  arrange(AvgULCreditScore)
+
+ggplot(loans17.Amount_by_Score, 
+       aes(x=AvgULCreditScore, y=LoanOriginalAmount_median ))+
+    geom_line()
+#maybe add number of loans.
+```
+
+How much can a person borrow based on credit? Above is the median 
+amount by AvgULCreditScore.
+
+Figure 51
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(loans17, aes(x=AvgULCreditScore, y=LoanOriginalAmount))+
+  geom_point(alpha=1/40, position=position_jitter(h=0),color='orange')+
+  geom_line(stat='summary', fun.y=median, color='blue')+
+  geom_line(stat='summary', fun.y= quantile, probs= 0.1,
+            linetype=2, color='blue')+
+  geom_line(stat='summary', fun.y= quantile, probs= 0.9,
+            linetype=2, color='blue')+
+geom_line(stat='summary', fun.y= quantile, probs= 1,
+            linetype=4, color='red')
+```
+
+This shows the median (50th quantile-blue line) of LoanOriginalAmount by
+AvgULCreditScore.
+The 10th and 90th quantile(dotted blue line) show how the range of loans
+increases as credit score increases.
+
+The max line in red gives a little insight into how loans were 
+approved or not based on credit score. 
+
+Guidelines may have been:
+No loans above 35000.
+Loans above 25000 must have a AvgULCreditScore of at least 710. 
+Loans above 15000 must have a AvgULCreditScore of at least 530.
+Loans above 2000 must have a AvgULCreditScore of at least 430.
+
+What is the distribution of LP_NetPrincipalLoss over Time(LoanOriginationDate)?
+
+Figure 52
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#---------+---------+---------+---------+---------+---------+---------+---------+
+ggplot(loans17, aes(x=LoanOriginationDate, y=LP_NetPrincipalLoss))+
+  geom_point(alpha=1/10)
+```
+
+This shows more loans with higher losses occurred before 2009 and a
+break in  new loans in late 2008 and early 2009. 
+
+Figure 53
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#I will try out different bin sizes.
+#loans17$LoanOriginationDate
+loans17$LoanOriginationMonth<-update(loans17$LoanOriginationDate, mday=1)
+loans17$LoanOriginationYear<-year(loans17$LoanOriginationDate)
+loans19<-loans17
+
+#DATE
+loans19.Loss_by_OriginationDate<-loans19%>%
+  filter(!is.na(LP_NetPrincipalLoss) & LP_NetPrincipalLoss>0)%>%
+  group_by(LoanOriginationDate)%>%
+  summarise(LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+            LP_NetPrincipalLoss_median=median(as.numeric(LP_NetPrincipalLoss)),
+            n=n())%>%
+  arrange(LoanOriginationDate)
+p1<-ggplot(loans19.Loss_by_OriginationDate, 
+           aes(x=LoanOriginationDate, y=LP_NetPrincipalLoss_mean ))+
+  geom_line()
+
+#MONTH
+loans19.Loss_by_OriginationMonth<-loans19%>%
+    filter(!is.na(LP_NetPrincipalLoss) & LP_NetPrincipalLoss>0)%>%
+    group_by(LoanOriginationMonth)%>%
+  summarise(LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+            LP_NetPrincipalLoss_median=median(as.numeric(LP_NetPrincipalLoss)),
+            n=n())%>%
+  arrange(LoanOriginationMonth)
+#head(loans19.Loss_by_OriginationMonth)
+
+p2<-ggplot(loans19.Loss_by_OriginationMonth, 
+           aes(x=LoanOriginationMonth, y=LP_NetPrincipalLoss_mean ))+
+  geom_line()
+
+#YEAR
+loans19.Loss_by_OriginationYear<-loans19%>%
+  filter(!is.na(LP_NetPrincipalLoss) & LP_NetPrincipalLoss>0)%>%
+  group_by(LoanOriginationYear)%>%
+  summarise(LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+            LP_NetPrincipalLoss_median=median(as.numeric(LP_NetPrincipalLoss)),
+            n=n())%>%
+  arrange(LoanOriginationYear)
+
+p3<-ggplot(loans19.Loss_by_OriginationYear, 
+           aes(x=LoanOriginationYear, y=LP_NetPrincipalLoss_mean ))+
+  geom_line()
+
+grid.arrange(p1,p2,p3,ncol=1)
+```
+
+The 3 graphs show the tradeoff between variance and bias. The top graph 
+has the mean for many data point(bin size is one day). This graph shows 
+the changes in the overall pattern of the data(low bias) but it is hard to read.
+It clearly shows the lack of loans in late 2008 and early 2009. 
+It also has high variance and you can't really see the mean.
+
+On the other hand the bottom graph has a more accurate measure of the 
+mean because the bin is larger(bin size is one year), lower variance and 
+lower noise. The bad aspect is it misses little changes like the lack of 
+loans (or NetPrinciapalLoss) late 2008 and early 2009. In that time period 
+it has the loss at about $400. The true value is closer to zero. This is 
+high bias and low variance. 
+
+I think the middle graph has good balance between bias and 
+varience(bin size is one month).
+
+Figure 54
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans19,LP_NetPrincipalLoss>0), 
+       aes(x=LoanOriginationMonth, y=LP_NetPrincipalLoss))+
+  geom_point(alpha=1/10)+
+  geom_line(stat='summary', fun.y=mean, color='red')
+```
+
+This has the above mean LP_NetPrincipalLoss by LoanOriginationMonth
+superimposed over the original data.
+
+What is profit by origination subseting LP_NetPrincipalLoss==0
+
+Figure 55
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17,LP_NetPrincipalLoss==0) , 
+       aes(x=LoanOriginationDate, y=profit))+
+  geom_point(alpha=1/30)
+```
+
+With an alpha of 1/30 this shows more loans after 2009 have more profitable 
+loans.
+
+Figure 56
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#I will try different bin sizes.
+loans17$LoanOriginationMonth<-update(loans17$LoanOriginationDate, mday=1)
+loans17$LoanOriginationYear<-year(loans17$LoanOriginationDate)
+loans19<-loans17
+#DATE
+loans19.Profit_by_OriginationDate<-loans19%>%
+  filter(!is.na(LP_NetPrincipalLoss & LP_NetPrincipalLoss==0))%>%
+  group_by(LoanOriginationDate)%>%
+  summarise(profit_mean=mean(profit),
+            profit_median=median(as.numeric(profit)),
+            n=n())%>%
+  arrange(LoanOriginationDate)
+p1a<-ggplot(loans19.Profit_by_OriginationDate, 
+           aes(x=LoanOriginationDate, y=profit_median ))+
+  geom_line()
+
+#MONTH
+loans19.Profit_by_OriginationMonth<-loans19%>%
+    filter(!is.na(LP_NetPrincipalLoss & LP_NetPrincipalLoss==0))%>%
+  group_by(LoanOriginationMonth)%>%
+  summarise(profit_mean=mean(profit),
+            profit_median=median(as.numeric(profit)),
+            n=n())%>%
+  arrange(LoanOriginationMonth)
+#head(loans19.Profit_by_OriginationMonth)
+
+p2a<-ggplot(loans19.Profit_by_OriginationMonth, 
+           aes(x=LoanOriginationMonth, y=profit_median ))+
+  geom_line()
+
+#YEAR
+loans19.Profit_by_OriginationYear<-loans19%>%
+  filter(!is.na(LP_NetPrincipalLoss & LP_NetPrincipalLoss==0))%>%
+  group_by(LoanOriginationYear)%>%
+  summarise(profit_mean=mean(profit),
+            profit_median=median(as.numeric(profit)),
+            n=n())%>%
+  arrange(LoanOriginationYear)
+
+p3a<-ggplot(loans19.Profit_by_OriginationYear, 
+           aes(x=LoanOriginationYear, y=profit_median ))+
+  geom_line()
+
+grid.arrange(p1a,p2a,p3a,ncol=1)
+```
+
+Again I like the middle graph(with month size bin). It has 
+balance between bias and variance.
+
+Figure 57
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17,LP_NetPrincipalLoss==0), 
+       aes(x=LoanOriginationMonth, y=profit))+
+  geom_point(alpha=1/30)+
+  geom_line(stat='summary', fun.y=median, color='red')
+```
+
+This is the median profit superimposed on the original scatter plot.
+
+Can we combine profit and loss into one graph? Yes, with NetProfit.
+
+Figure 58
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ ggplot(loans17, 
+       aes(x=LoanOriginationMonth, y=NetProfit))+
+  geom_point(alpha=1/30)+
+  geom_line(stat='summary', fun.y=median, color='red')
+  
+```
+
+It looks like NetProfit started to rise after 2009.
+
+Can we find the changes the bank made in granting loans that can
+explain this increase in NetProfit?
+
+Above we found theses apparent guidelines for granting loans.
+No loans above 35000.
+Loans above 25000 must have a AvgULCreditScore of at least 710. 
+Loans above 15000 must have a AvgULCreditScore of at least 530.
+Loans above 2000 must have a AvgULCreditScore of at least 430.
+
+Maybe in the multi variant section we can find guide lines for pre and 
+post 2009. 
+
+
+6)Monthly Patterns
+
+I will now look for monthly patterns. Like the Mitchel data. 
+
+Figure 59
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#MONTH
+#Looking for pattern like Mitchell data
+#for loss
+ggplot(subset(loans17, loans17$LP_NetPrincipalLoss>0), 
+       aes(x=month(LoanOriginationDate), y=LP_NetPrincipalLoss))+
+  geom_point(alpha=1/20, position=position_jitter(h=0))+
+  coord_trans(y='sqrt')+
+  scale_x_discrete(breaks=seq(1, 12, 1))+
+  geom_line(stat="summary", fun.y=median, color='red')
+```
+
+This is for Loans with a LP_NetPrincipalLoss>0.
+I'm seeing more density in the middle months. Months 5-8(May-August), 
+with a maxium loss in April.
+
+Figure 60
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#for profit
+ggplot(subset(loans17, loans17$LP_NetPrincipalLoss==0), 
+       aes(x=month(LoanOriginationDate), y=profit))+
+  geom_point(alpha=1/40, position=position_jitter(h=0))+
+  #coord_trans(y='sqrt')+
+  scale_x_discrete(breaks=seq(1, 12, 1))
+``` 
+
+This is profit for loans with a LP_NetPrincipalLoss==0.
+Even with an alpha of 0.05 I see less density in months 4-7.
+
+Figure 61
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17, loans17$LP_NetPrincipalLoss>0), 
+       aes(x=month(LoanOriginationDate)))+
+  geom_histogram()+
+  scale_x_discrete(breaks=seq(1, 12, 1))
+```
+
+More loans were made in April - August months. So the middle months have
+more loans, less profit and more loss.
+ 
+Figure 62
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(loans17, aes(x=month(LoanOriginationDate), y=LoanOriginalAmount))+
+  geom_point(alpha=1/40, position=position_jitter(h=0))+
+  coord_trans(y='sqrt')+
+  scale_x_discrete(breaks=seq(1, 12, 1))+
+  geom_line(stat='summary', fun.y=median, color='red')
+
+#by(loans17$LoanOriginalAmount, month(loans17$LoanOriginationDate), median)
+```
+
+Looks like median loan amounts peak in January (8500.00) and hits 
+a low in May and June ($5000.00). Therefore more loans were made in the late 
+spring and summer months, but for a lower amounts.
+
+Therefor more loans are made in the middle months, these were smaller and 
+made less profit and had more loss of principal!
+
+Income Verifiable vs. Debt to income ration.
+
+I noticed if the data frame is subsetted for (DebtToIncomeRatio 
+less than the 0.99 quantile) most of the IncomeVerifiable=="FALSE" were 
+filter out also.
+
+Are these loans with unsualy high DebtToIncomeRatio AND 
+IncomeVerifiable=="FALSE"  being paided back?
+
+Figure 63
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17,IncomeVerifiable=="FALSE" &
+                DebtToIncomeRatio>10), 
+       aes(x=LoanOriginalAmount, y=LP_NetPrincipalLoss))+
+geom_point()
+```
+
+I will create a variable NoNetLoss.
+The NoNetLoss variable is true is if LP_NetPrincipalLoss is zero and false 
+if LP_NetPrincipalLoss is greater than zero.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cond<-loans17$LP_NetPrincipalLoss>0
+loans17$NoNetLoss<-ifelse(cond, 'F', 'T')
+cond<-loans17$LP_NetPrincipalLoss<0
+loans17$NoNetLoss<-ifelse(cond, NA, loans17$NoNetLoss)
+loans17$NoNetLoss<-factor(loans17$NoNetLoss)
+# The above code creates the new variable 'NoNetLoss' and 
+#remove negative outlies or converts them to 'NA'.
+with(subset(loans17, !is.na(NoNetLoss) ), summary(NoNetLoss))
+```
+
+The percent of NoNetLoss==F to NoNetLoss==T for all the data is,
+NoNetLoss==F/(NoNetLoss==F to NoNetLoss==T):
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+nrow(subset(loans17, !is.na(NoNetLoss) & NoNetLoss=='F'))/(
+  nrow(subset(loans17, !is.na(NoNetLoss) & NoNetLoss=='T'))+
+  nrow(subset(loans17, !is.na(NoNetLoss) & NoNetLoss=='F')))
+```
+
+The percent of NoNetLoss==F to NoNetLoss==T for data with
+IncomeVerifiable=="FALSE" & DebtToIncomeRatio>10 is:
+NoNetLoss==F/(NoNetLoss==F to NoNetLoss==T)
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+nrow(subset(loans17, !is.na(NoNetLoss) & 
+              IncomeVerifiable=="FALSE" & 
+              DebtToIncomeRatio>10& NoNetLoss=='F'))/(
+  nrow(subset(loans17, !is.na(NoNetLoss) & 
+                IncomeVerifiable=="FALSE" &
+                DebtToIncomeRatio>10 &
+                NoNetLoss=='T'))+
+  nrow(subset(loans17, !is.na(NoNetLoss) & 
+              IncomeVerifiable=="FALSE" & 
+              DebtToIncomeRatio>10& NoNetLoss=='F')))
+```
+
+That is a big difference. The data definition page that came the with 
+data set states if the DebtToIncomeRatio is greater than 10 it is entered 
+as 10.01. Therefore these are not outliers. 
+These are real data point with extremely high values. 
+
+This combination of IncomeVerifiable=="FALSE" & DebtToIncomeRatio>10 
+has a percent of loans with a loss of principal of 47.8% and the overall data
+only has 14.4% with a loss of principal. That is a big difference.
+
+This combination of IncomeVerifiable=="FALSE" & DebtToIncomeRatio>10 should have 
+been a red flag for possibly fraud. 
+These borrows have a huge DeptToIncome ratio AND they can't verify 
+their income AND they have a loss of principal 3 times the overall data.
+
+# Bivariate Analysis
+
+### Talk about some of the relationships you observed in this partof the investigation. How did the feature(s) of interest vary with other features in the dataset?
+A) BorrowerRate
+1) I found a correlation between BorrowerRate and LoanOriginalAmount. 
+I used qplot to see the relationship. Over plotting was present.
+I used alpha to reduce over plotting but an alpha of 1/10.  I used the 
+cor.test inside the with() function to get the Pearson 
+product-moment correlation of -0.331. This demonstrates a significant 
+correlation. There is a correlation but I don't think the bank would 
+give you a lower rate just because you asked for a big loan.
+
+2) There is over plotting when comparing BorrowerRate and AvgULCreditScore. Only
+after using an alpha of 0.05 to was I able to see the true slop 
+pattern of the graph.These variables have a stronger correlation(r=-0.488). 
+This makes sense, if you have good credit score you are more likely to get a 
+lower interest rate (BorrowersRate). This shows as Credit Score increases
+the median BorrowerRate decreases.
+
+3) The boxplot of LoanQuality and BorrowerRate shows a significant difference in 
+BorrowerRate for good loans and bad loans. The box plot shows a 
+lower BorrowerRate for good_loans(0.176) than bad_loans(0.239).
+
+4) It seems that if a borrower did not verify their income the interest
+rate median was 0.04 percent higher. This was probably a factor in determining 
+intrest rate.
+
+B) AvgULCreditScore
+AvgULCreditScore and LoanOriginalAmount were explored above. The corelation
+of AvgULCreditScore and LoanOriginalAmount is 0.3519.
+
+Figure 51 shows as credit score increases the original loan amount increases.
+It also shows the median (50th quantile-blue line) of LoanOriginalAmount by 
+AvgULCreditScore. The 10th and 90th quantile(blue dotted lines) show how 
+the range of loans increases as credit score increases.
+
+The max line in red gives a little insight into how loans were 
+appoved or not based on credit score. It also gives us some information about 
+how interest rates were determined.
+
+Guidelines:
+Only, credit scores above 700 get loan between $25,000-$35,000. 
+No loans above 35000.
+Loans above 25000 must have a AvgULCreditScore of at least 710. 
+Loans above 15000 must have a AvgULCreditScore of at least 530.
+Loans above 2000 must have a AvgULCreditScore of at least 430.
+
+This supports the idea that credit score is taken into acount 
+when granting a loan!
+
+### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
+
+A)LP_NetPrincipalLoss
+The median of the none zero values of LP_NetPrincipalLoss is 3294 with a 
+max of 25000!
+
+LP_NetPrincipalLoss was determined and entered into the data set after the loan
+started so it cannot be used to determine the factors of interest rate
+determination.
+
+LP_NetPrincipalLoss is compared to CreditHistoryLength, LoanOriginalAmount,
+AvgULCreditScore and LoanOriginationDate above and discussed below:
+
+1)What is the distribution of LP_NetPrincipalLoss over Time(LoanOriginationDate)
+Figure 52 shows more loans with higher losses occurred before 2009 and a
+break in  new loans in late 2008 and early 2009. 
+
+I used the filter, group_by, summarise and arrange functions form dplyr to get
+the mean and median data frame with buckets of day, month and year.
+
+The 3 graphs show the tradeoff between variance and bias. The top graph 
+has the mean for many data point(bin size is one day). This graph shows 
+the changes in the overall pattern of the data(low bias) but it is hard to read.
+It clearly shows the lack of loans in late 2008 and early 2009. 
+It also has high variance and you can't really see the mean.
+
+On the other hand the bottom graph has a more accurate measure of the 
+mean because the bin is larger(bin size is one year), lower variance and 
+lower noise. The bad aspect is it misses little changes like the lack of 
+loans (or NetPrinciapalLoss) late 2008 and early 2009. In that time period 
+it has the loss at about $400. The true value is closer to zero. This is 
+high bias and low variance. 
+
+I think the middle graph has good balance between bias and 
+varience(bin size is one month). I superimposed this on the original data to
+create Figure 54.
+
+2)The CreditHistoryLength variable was created from the difference between the
+LoanOriginationDate and FirstRecordedCreditLine. Does the length someone has a
+credit history effect their interest rate(BorrowerRate) or their ability to pay
+off the loan without a net loss of principal(LP_NetPrincipalLoss)?
+
+The LP_NetPrincipalLoss was plotted against CreditHistoryLength variable. 
+I made variables with different size bins( one day, 
+one month, 3 months, one year, 5 years) for CreditHistoryLength
+to pick the graph with the best bias variance balance. 
+There seems to be 3 parts on this graph.  The first third of the 
+x axis  increase slowly then levels off for the middle third and then increases 
+sharply for the last third.
+
+This seems to counter intuitive. I would have thought if a borrower had a 
+longer credit history they would better be able to pay of their loans in full.
+
+3) What is the median LP_NetPrincipalLoss by LoanOriginalAmount?
+I used chained dplyr functions to create different size bins for
+LoanOriginalAmount to see which makes the data easiest to understand. I 
+picked the graph with the best balance between bias and variance of the median
+NetPrincipalLoss for LoanOriginalAmount with a bin size of $500. Then I used 
+stat summary to superimpose the median line over the original data, Figure 29.
+
+Figure 29 shows that if a loans has a non zero LP_NetPrincipalLoss most of the
+loans lose are more than half the original value!
+
+4) What is the median LP_NetPrincipalLoss for the different AvgULCreditScore?
+This is informative. The median LP_NetPrincialLoss increases as 
+CreditScore goes up to 850 then it drops sharply. Figure 32 above shows this 
+median line superimposed over the original data.
+
+5)What is the sum LP_NetPrincipalLoss for the different AvgULCreditScore?
+This shows the sum of net principal loss by Credit Score.
+It shows losses peak at a credit score of about 650 to 700. 
+
+This makes me wonder which credit scores makes the most profit(Borrower rate *
+OriginalLoanAmount, if and only if there is no default) and loss.
+
+Which loans make more money? If a loan has a LP_NetPrincipalLoss 
+value of zero this means the principal is being paid back with interest. The
+bigger the loan and the higher the interest rate the more profit. So 
+BorrowerRate multiplied by LoanOriginalAmount will roughly give the profit 
+per loan. Let's see what factors affect profit.
+
+B) Profit
+A Profit variable was created. The created graph shows most profit is from 
+loans between 650 and 750 credit score.
+
+What is profit by origination, subseting by LP_NetPrincipalLoss==0?
+
+Figure 57 shows loans after 2009 have more profitable loans the median profit
+superimposed on the original scatter plot. Monthly bin size was the best 
+balance between variance and bias.
+
+Can we combine profit and loss into one graph??
+
+C) NetProfit
+Which CreditScore makes the most NetProfit(profit - loss)?
+A variable Net_profit was created:
+Net_profit = profit - LP_NetPrincipalLoss
+Figure 58 look like NetProfit stared to rise after 2009.
+
+Can we find the changes the bank made in granting loans that can
+explain this increase in NetProfit? Maybe in the multi variant section we can
+find the different guidelines for pre and post 2009.
+
+Net_profit by AvgULCreditScore showed 
+You can see that the median NetProfit for all loans less than 
+a credit score of 520 are negative! After zooming in with coord_cartesian()
+function we see the credit scores that make the most net profit are 690 to 
+about 740.
+We will look at these variables later in the multi variant section and compare 
+loans pre 2009 to post 2009.
+
+D)Loan Quality was explored above. The most striking finding was Loan Quality 
+vs AvgULCreditScore. A box plot and statistical analysis shows loans defined
+as bad had a 40 point lower AvgULCreditScore.
+
+E) A True or False "NoNetLoss" variable was created.
+Samples with a net loss "T" were evaluated for samples with IncomeVerifiable
+=="FALSE" & DebtToIncomeRatio>10 compared to the overall population.
+
+That is a big difference. The data definition page that came the with 
+data set states if the DebtToIncomeRatio is greater than 10 it is entered 
+as 10.01. Therefore these are not outliers. 
+These are real data point with extremely high values. 
+
+This combination of IncomeVerifiable=="FALSE" & DebtToIncomeRatio>10 has a
+percent of loans with a loss of principal of 47.8% and the overall data only has
+14.4% with a loss of principal. That is a big difference.
+
+This combination of IncomeVerifiable=="FALSE" & DebtToIncomeRatio>10 should have 
+been a red flag for possibly fraud or a bad risk. 
+These borrows have a huge DeptToIncome ratio AND they can't verify 
+their income AND they have a loss of principal 3 times the overall data!!
+
+### What was the strongest relationship you found?
+AvgULCreditScore and BorrowerRate
+An alpha of 1/40 helps visualize the data.
+This is the highest correlation I have seen (r=-0.488). If you 
+have good credit you are more likely to get a lower 
+interest rate (BorrowersRate). 
+This could explain the graph above with better rates for larger loans. 
+It's not the larger loan, it the borrowers good credit score that get the lower 
+interest rate.
+
+The median BorrowerRate as credit score increases was explored.
+Figure 51 shows as credit score increases BorrowerRate decreases especially going 
+from a score of 600 toward 900.
+
+
+# Multivariate Plots Section 
+
+```{r echo=FALSE, Multivariate_Plots}
+#set.seed(1836)
+#str(loans17)
+#names(loans17)
+#loans17_subset<-loans17[,c(1,2,3,4,5,8,9,12,14,15,16)]
+#ggpairs(loans17_subset[sample.int(nrow(loans17_subset),1000), ])
+#c(2,3,4,5,8,9,11,12,14,15)
+#c(1,2,3,4,5,8,9,12,14,15,16)
+```
+
+Now that we are in the multivariant section let's look at 
+differences pre2009 and post2009
+
+Figure 64
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17, loans17$EmploymentStatusDuration>0),
+       aes(y=BorrowerRate, x=EmploymentStatus))+
+  geom_boxplot()+
+  facet_wrap(~Jan_2009_loans)+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))
+```
+
+We see an increase in BorrowerRate for almost all categories after January 2009.
+More so with the "Not employed".
+
+Figure 65
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data=loans17, aes(y=BorrowerRate, x=IncomeVerifiable))+
+  geom_boxplot()+
+  facet_wrap(~Jan_2009_loans)
+#with(loans17, by(BorrowerRate,IncomeVerifiable, median))
+```
+
+We see an increase in BorrowerRate after Jan_2009_loans. The increase is more
+prevelant in loans with IncomeVerifiable==FALSE. 
+
+Figure 66
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data=loans17, aes(y=BorrowerRate, x=IncomeRange))+
+  geom_boxplot()+
+  facet_wrap(~Jan_2009_loans)+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))
+```
+
+Interest rate increases after  Jan_2009 for all income ranges, more so for 
+low income and "Not employed".
+
+Now let's look at principal loss, profit, and net profit.
+Above we looked at these 3 with relation to AvgCreditScore.
+Now let's look at these 3 with ralation to EmploymentStatusDuration.
+
+Using dplyr I'll make a data frame and group by 
+EmploymentStatusDuration_5years(5 year bins), EmploymentStatus, NoNetLoss.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+loans17$EmploymentStatusDuration_5years<-round(loans17$EmploymentStatusDuration/5)*5
+
+loans17.NetLossB_by_Duration5Years<- 
+  subset(loans17,  !loans17$LP_NetPrincipalLoss < 0 &
+           !is.na(loans17$EmploymentStatusDuration_5years)) %>%
+  group_by(EmploymentStatusDuration_5years, EmploymentStatus, NoNetLoss) %>%
+  summarise(LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+          LP_NetPrincipalLoss_median = median(LP_NetPrincipalLoss),
+          n=n()) %>%
+  arrange(EmploymentStatusDuration_5years, EmploymentStatus, NoNetLoss)
+#head(loans17.NetLossB_by_Duration5Years)
+```
+
+Now I will use dcast to cast the NoNetLoss vaiable into a "T" and 
+"F" varible which represent the number of loans that do and don't 
+have a zero LP_NetPrincipalLoss. 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+loans17.NetLossB_by_Duration5Years.wide<-dcast(
+                        data=loans17.NetLossB_by_Duration5Years,  
+                        EmploymentStatusDuration_5years + 
+                          EmploymentStatus ~ NoNetLoss, value.var='n')
+#head(loans17.NetLossB_by_Duration5Years.wide,100)
+```
+
+Now we can graph the ratio of LP_NetPrincipalLoss>0 to 
+LP_NetPrincipalLoss==0 for every level of EmploymentStatus over 
+every 5 year bin of EmploymentStatusDuration_5years.
+
+Figure 67
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17.NetLossB_by_Duration5Years.wide,
+              EmploymentStatus!='Retired' &
+              EmploymentStatus!='Part-time' ),
+  aes(x=EmploymentStatusDuration_5years, y= F/T))+
+  geom_line(aes(color=EmploymentStatus))+
+  scale_x_continuous(limits=c(0,350), breaks=seq(0, 350, 50))
+```
+
+This shows that as the EmploymentStatusDuration goes from zeor to 
+150 months "Full Time employed" have the highest consistant ratio.
+
+
+Figure 68
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(loans17, aes(x=AvgULCreditScore, y=LoanOriginalAmount))+
+  geom_point(alpha=1/40, position=position_jitter(h=0),color='orange')+
+  geom_line(stat='summary', fun.y=median, color='blue')+
+  geom_line(stat='summary', fun.y= quantile, probs= 0.1,
+            linetype=2, color='blue')+
+  geom_line(stat='summary', fun.y= quantile, probs= 0.9,
+            linetype=2, color='blue')+
+geom_line(stat='summary', fun.y= quantile, probs= 1,
+            linetype=4, color='red')+
+  facet_wrap(~Jan_2009_loans)
+
+```
+
+This gives us a lot of information!
+Apparent pre2009 guidelines for loan approval:
+no loans above $25,000
+no loans above $15,000 with a credit score less than 550
+no loans above about $2,000 with a credit score less than 440
+no loans with a credit score less than about 380
+
+Apparent pre2009 guidelines for loan approval:
+no loans above $35,000
+no loans above $25,000 with a credit score less than 710
+no loans above $15,000 with a credit score less than 650
+no loans with a credit score less than about 600
+ 
+This shows stricter requirements on credit score and higher 
+maximum loans to $35,000. This may explain the increase in NetProfit 
+after 2009 we saw earlier. 
+
+Possible Fraud exploration.
+Which original loan amount are most frequent?
+
+Figure 69
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(loans17, aes(LoanOriginalAmount))+
+  geom_histogram(aes(fill=NoNetLoss))+
+  scale_fill_brewer(type='qual')
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+summary(loans17$LoanOriginalAmount)
+
+summary(loans17$NoNetLoss)
+#16266/(16266+96301)
+```
+
+The overall percent of loans with a NoNetLoss==F(green) is 14%. That is 14% of
+the above graph is green. 
+
+Most loans are for less than $10,000. Most borrowers (purple)
+are paying(or paid) back the loans with no net loss of principal.
+
+Figure 70
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(loans17, aes(LoanOriginalAmount))+
+  geom_histogram(aes(fill=NoNetLoss))+
+  scale_fill_brewer(type='qual')+
+  facet_wrap(~Jan_2009_loans, scales="free_y")
+
+with(subset(loans17,!is.na(NoNetLoss) &
+            Jan_2009_loans=='pre2009'),
+     summary(NoNetLoss))
+10122/(10122+17869)
+with(subset(loans17,!is.na(NoNetLoss) &
+            Jan_2009_loans=='post2009'),
+     summary(NoNetLoss))
+6144/(6144+78432)
+```
+
+Fewer loans were made pre2009. Also, the pre2009 graph has 36.2% of loans with a 
+NoNetLoss==F(the green) and the post2009 graph has only 7.3% of 
+loans with a NoNetLoss(green in the right graph above). This implies 
+the bank changed loan requirement policys  in 2009 and these changes 
+decreased net loss.
+
+Let's take this one step further.
+I want to look at loans with the "unusual combination" of 
+IncomeVeriable==F and DebtToIncomeRation>=10. I want to be able
+to put these loans into the facet grid as one group.
+To this I will create a variable 'pFraud' that is true if a
+borrower has an IncomeVeriable==F and DebtToIncomeRation>=10. pFraud stands for
+posible fraud.
+
+Figure 71
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+loans17$pFraud<-NA
+cond<- loans17$IncomeVerifiable == F & loans17$DebtToIncomeRatio>10
+loans17$pFraud<-ifelse(cond, 'pFraudTrue', 'pFraudFalse')
+loans17$pFraud<-factor(loans17$pFraud)
+
+ggplot(subset(loans17, !is.na(pFraud)), aes(LoanOriginalAmount))+
+  geom_histogram(aes(fill=NoNetLoss))+
+  scale_fill_brewer(type='qual')+
+  facet_grid(pFraud ~ Jan_2009_loans,  scales='free')
+```
+
+This is ineresting. We can see fewer NoNetLoss==F(green) in the post 2009 
+loans. NoNetLoss==F represent the loans that have lost some or all of 
+the princical. So, the change in borrowing requirements that appears to have 
+taken effect in 2009 seem to be working to reduce net principal loss.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+with(subset(loans17,!is.na(NoNetLoss) &
+            IncomeVerifiable==T &
+              DebtToIncomeRatio<10 &
+            Jan_2009_loans=='pre2009'),
+     summary(NoNetLoss))
+9592/(9592+17008)
+```
+
+The pre2009 without the "unusual combination" has a 
+percent of NoNetLoss==F(green) of 36.1%. That is 36.1% of the 
+top left graph is green.
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+with(subset(loans17,!is.na(NoNetLoss) &
+            IncomeVerifiable==T &
+              DebtToIncomeRatio<10 &
+            Jan_2009_loans=='post2009'),
+     summary(NoNetLoss))
+5152/(5152+72079)
+```
+
+The post2009 without the "unusual combination" has a percent
+of NoNetLoss==F(green) of 6.7%. That is 6.7% of the top right graph is green.
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+with(subset(loans17, IncomeVerifiable==F &
+              DebtToIncomeRatio>=10 &
+            Jan_2009_loans=='pre2009'),
+     summary(NoNetLoss))
+88/(88+95)
+```
+
+The pre2009 with the "unusual combination"  has a percent 
+of NoNetLoss==F(green) of 48.1%. That is 48.1% of the bottom left graph is green.
+This graph has the highest percent green. This implies there is a chance of a 
+bad bank policy in granting loans in pre2009 or possible fraud.
+
+
+Now look at the two graphs in the first column. These look at pre2009 
+loans. The loans that have this unique combination(the bottom left graph)
+show a higher percentage (48.1%) of green (loss of principal) than 
+the pre2009 loans without this unique combination(top left graph),36.1%. 
+
+Look closely at the graphs of pre2009 loans with the unique 
+combination(bottom left). There are 20 loans of $25,000. It looks like
+13 of the 20 have a loss of principal. Why would a banker give the 
+maximum loans($25,000 at the time)  to a person with a DebtToIncomeRatio  of
+greater than 10 and who can't varifiy thier income? Fraud, maybe, or bad policy.
+Now looking at the post2009 loans with the unique combination(bottom right 
+graph). This show that the new loan requirements that started in 2009 
+are working. There is only one loan post2009 with that unique combination 
+and it has no net loss of principal!
+
+
+
+This "profit"" variable is just a quick way to evaluate loan quality. 
+It Multiplies LoanOriginalAmount by BorrowerRate.
+
+Figure 72
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+loans17$profit<-as.integer(loans17$BorrowerRate*loans17$LoanOriginalAmount)
+#Creates a profit variable.
+#loans17$LoanOriginalAmount
+loans17$LoanOriginalAmount500<-round(loans17$LoanOriginalAmount/500)*500
+loans17$LoanOriginalAmount1000<-round(loans17$LoanOriginalAmount/1000)*1000
+loans17$LoanOriginalAmount3000<-round(loans17$LoanOriginalAmount/3000)*3000
+
+#These lines of code create LoanOriginalAmount variables of different 
+#bin sizes (1, 500, 1000,3000).
+
+#bin size is $1
+loans17.profit_by_Amount<-loans17%>%
+  filter(LP_NetPrincipalLoss > 0)%>%
+  group_by(LoanOriginalAmount, Jan_2009_loans)%>%
+  summarise(profit_mean=mean(profit),
+            #profit_median=median(profit),
+            profit_sum=sum(profit),
+            n=n())%>%
+  arrange(LoanOriginalAmount, Jan_2009_loans)
+p1mean<-ggplot(loans17.profit_by_Amount, 
+               aes(y=profit_mean, x=LoanOriginalAmount, color=Jan_2009_loans))+
+  geom_line()
+
+#bin is $500
+loans17.profit_by_Amount500<-loans17%>%
+  filter(LP_NetPrincipalLoss > 0)%>%
+  group_by(LoanOriginalAmount500, Jan_2009_loans)%>%
+  summarise(profit_mean=mean(profit),
+            profit_median=median(profit),
+            profit_sum=sum(profit),
+            n=n())%>%
+  arrange(LoanOriginalAmount500, Jan_2009_loans)
+#head(loans17.profit_by_Amount500)
+p500mean<-ggplot(loans17.profit_by_Amount500, 
+                 aes(y=profit_mean, x=LoanOriginalAmount500, color=Jan_2009_loans))+
+  geom_line()
+
+#Same as above with a $1000 bin.
+loans17.profit_by_Amount1000<-loans17%>%
+  filter(LP_NetPrincipalLoss > 0)%>%
+  group_by(LoanOriginalAmount1000, Jan_2009_loans)%>%
+  summarise(profit_mean=mean(profit),
+            profit_median=median(profit),
+            profit_sum=sum(profit),
+            n=n())%>%
+  arrange(LoanOriginalAmount1000, Jan_2009_loans)
+#head(loans17.profit_by_Amount1000)
+p1000mean<-ggplot(loans17.profit_by_Amount1000, 
+       aes(y=profit_mean, x=LoanOriginalAmount1000, color=Jan_2009_loans))+
+  geom_line()
+
+#3000
+loans17.profit_by_Amount3000<-loans17%>%
+  filter(LP_NetPrincipalLoss > 0)%>%
+  group_by(LoanOriginalAmount3000, Jan_2009_loans)%>%
+  summarise(profit_mean=mean(profit),
+            #profit_median=median(profit),
+            profit_sum=sum(profit),
+            n=n())%>%
+  arrange(LoanOriginalAmount3000, Jan_2009_loans)
+#head(loans17.profit_by_Amount3000)
+p3000mean<-ggplot(loans17.profit_by_Amount3000, 
+                  aes(y=profit_mean, x=LoanOriginalAmount3000, 
+                      color=Jan_2009_loans))+
+  geom_line()
+ 
+grid.arrange(p1mean,p500mean,p1000mean, p3000mean, ncol=1)
+```
+
+I like the graph with the $500 bin. It has a balance between bias and variance.
+We see bigger loans on average make more money. 
+
+In addition to creating a "profit mean" variable I also created a "profit sum"
+variable so we can add up all the profit values for the bins.
+ 
+Figure 73 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ p1sum<-ggplot(loans17.profit_by_Amount, 
+               aes(y=profit_sum, x=LoanOriginalAmount, color=Jan_2009_loans))+
+  geom_line()
+ 
+p500sum<-ggplot(loans17.profit_by_Amount500, 
+aes(y=profit_sum, x=LoanOriginalAmount500, color=Jan_2009_loans))+
+  geom_line()
+
+p1000sum<-ggplot(loans17.profit_by_Amount1000, 
+aes(y=profit_sum, x=LoanOriginalAmount1000, color=Jan_2009_loans))+
+  geom_line()
+  
+p3000sum<-ggplot(loans17.profit_by_Amount3000, 
+aes(y=profit_sum, x=LoanOriginalAmount3000, color=Jan_2009_loans))+
+  geom_line()
+
+grid.arrange(p1sum, p500sum, p1000sum, p3000sum, ncol=1)
+```
+
+With these I like the graph with the $3000 bin size. 
+Looks like most profit is from loans under $10000.
+
+This creates a data frame that group_by LoanOriginationMonth and 
+IncomeVerifiable.
+
+Figure 74
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+loans19.Loss_by_OriginationMonth_wIncomeVerifiable<-loans19%>%
+    filter(!is.na(LP_NetPrincipalLoss & LP_NetPrincipalLoss>0))%>%
+  group_by(LoanOriginationMonth, IncomeVerifiable)%>%
+  summarise(LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+            LP_NetPrincipalLoss_median=median(as.numeric(LP_NetPrincipalLoss)),
+            n=n())%>%
+  arrange(LoanOriginationMonth, IncomeVerifiable)
+#head(loans19.Loss_by_OriginationMonth_wIncomeVerifiable)
+
+ggplot(loans19.Loss_by_OriginationMonth_wIncomeVerifiable, 
+           aes(x=LoanOriginationMonth, y=LP_NetPrincipalLoss_mean,
+           color=IncomeVerifiable))+
+           geom_line()
+```
+
+This shows that borrower without an income verification have a
+higher average loss of principal than borrower with an income verification. 
+
+What is the ratio of non-verified income to verified income?
+
+Figure 75
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#head(loans19.Loss_by_OriginationMonth_wIncomeVerifiable)
+loans19.Loss_by_OriginationMonth_wIncomeVerifiable.wide<-dcast(
+  data=loans19.Loss_by_OriginationMonth_wIncomeVerifiable,  
+  LoanOriginationMonth~ IncomeVerifiable, value.var='LP_NetPrincipalLoss_mean')
+#head(loans19.Loss_by_OriginationMonth_wIncomeVerifiable.wide)
+
+ggplot(loans19.Loss_by_OriginationMonth_wIncomeVerifiable.wide, 
+           aes(x=LoanOriginationMonth, 
+               y= loans19.Loss_by_OriginationMonth_wIncomeVerifiable.wide[,2] / 
+                 loans19.Loss_by_OriginationMonth_wIncomeVerifiable.wide[,3] ))+
+  geom_line()+
+  geom_hline(y=1, color='RED', linetype=2)
+```
+
+This shows that ratio of (LP_NetPrincipalLoss with IncomeVerification==FALSE) 
+to (LP_NetPrincipalLoss with IncomeVerification==TRUE). 
+Clearly loans without income verification have higher
+LP_NetPrincipalLoss_mean. One time the ratio to loans with
+income verification is greater than 3 to 1 and frequently 2 to 1.
+
+This may imply that the borrower may not be truthful when giving stated income.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+#CreditScore.bucket
+loans19.Loss_by_OriginationMonth_wCreditScore.bucket<-loans19%>%
+    filter(!is.na(LP_NetPrincipalLoss & LP_NetPrincipalLoss>0))%>%
+  group_by(LoanOriginationMonth, CreditScore.bucket)%>%
+  summarise(LP_NetPrincipalLoss_mean=mean(LP_NetPrincipalLoss),
+            LP_NetPrincipalLoss_median=median(as.numeric(LP_NetPrincipalLoss)),
+            n=n())%>%
+  arrange(LoanOriginationMonth, CreditScore.bucket)
+#head(loans19.Loss_by_OriginationMonth_wCreditScore.bucket)
+```
+
+This utilizes dplyr and aggragates the data. This groups by 
+LoanOriginationMonth AND  CreditScore.bucket.
+
+Figure 76
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17, !is.na(LP_NetPrincipalLoss) & !is.na(CreditScore.bucket)), 
+       aes(x=LoanOriginationMonth, y=LP_NetPrincipalLoss))+
+  geom_line( aes( color=CreditScore.bucket), stat='summary', fun.y=mean)+
+  geom_line( aes( color=AvgULCreditScore), stat='summary', fun.y=mean, linetype=4)
+```
+
+Now we can see the mean for all the CreditScore.bucket levels. This shows how
+after January 2009 no loans were made to a borrower with a credit score lower 
+than 600. Also this shows before 2009 the average principal 
+loss was much higher. The dotted line is the grand mean.
+
+
+Figure 77
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+###samething without aggregating the data and with sums and grand sum
+ggplot(subset(loans17, !is.na(LP_NetPrincipalLoss) & !is.na(CreditScore.bucket)),
+       aes(x=LoanOriginationMonth, y=LP_NetPrincipalLoss))+
+  geom_line( aes( color=CreditScore.bucket), stat='summary', fun.y=sum)+
+  geom_line( aes( color=AvgULCreditScore), stat='summary', fun.y=sum, linetype=4)
+```
+
+This shows the sum of the losses(LP_NetPrincipalLoss) by 
+CreditScore.bucket and the overall sum of the losses.
+
+Now, can we do this with profit?
+
+Figure 78
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#profit
+#Same thing without aggregating the data and with mean of profit and grand mean.
+ggplot(subset(loans17, !is.na(LP_NetPrincipalLoss) &
+                LP_NetPrincipalLoss==0 & !is.na(CreditScore.bucket)), 
+       aes(x=LoanOriginationMonth, y=profit))+
+  geom_line( aes( color=CreditScore.bucket), stat='summary', fun.y=mean)+
+  geom_line( aes( color=AvgULCreditScore), stat='summary', fun.y=mean, linetype=4)
+```
+
+This show that before 2009 the top two credit buckets made most of the profit.
+This may be why they changed police to only make loans to borrowers with 
+credit score of 600 or better.
+
+Now we can get grand sum the profit.
+
+Figure 79
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17, !is.na(LP_NetPrincipalLoss) & 
+                !is.na(CreditScore.bucket) & LP_NetPrincipalLoss==0), 
+       aes(x=LoanOriginationMonth, y=profit))+
+  geom_line( aes( color=CreditScore.bucket), stat='summary', fun.y=sum)+
+  geom_line( aes( color=AvgULCreditScore), stat='summary', fun.y=sum, linetype=4)
+```
+
+Wow! This shows profit approaching 10 million at about 2014. Let's compare this 
+to the losses and see if the changes that were made after 2009 improved
+NetProfit.
+
+Now let's see profit minus LP_NetPrincipalLoss, to get NetProfit.
+
+Figure 80
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17, !is.na(LP_NetPrincipalLoss) & 
+                !is.na(CreditScore.bucket) ), 
+       aes(x=LoanOriginationMonth, y=NetProfit))+
+  geom_line( aes( color=CreditScore.bucket), stat='summary', fun.y=sum)+
+  geom_line( aes( color=AvgULCreditScore), stat='summary', fun.y=sum, linetype=4)
+  
+```
+
+This shows a negative net profit before 2009 and slow rise in 
+net profit though2012 and then a spike to about $10,000,000 by about 2014!  
+
+Figure 81
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Profit
+ggplot(subset(loans17, !is.na(CreditScore.bucket) &
+                IncomeRange!="Not displayed" &
+                CreditScore.bucket!="(300,400]"),
+       aes(x=CreditScore.bucket, y=profit))+
+  geom_boxplot(aes(fill=IncomeRange))+
+  coord_cartesian(ylim=c(0, 2500))+
+  scale_y_continuous(limits=c(0, 2200), breaks=seq(0,3000,500))+
+  scale_fill_brewer(type='seq')
+```
+
+This shows that CreditScore.buckets increase profits as
+income ranges increases within and across credit score buckets.
+
+Figure 82
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17,LP_NetPrincipalLoss>0 & 
+                !is.na(CreditScore.bucket)&
+                IncomeRange!="Not displayed"&
+                CreditScore.bucket!="(300,400]") ,
+                aes(x=CreditScore.bucket, 
+                y=LP_NetPrincipalLoss))+
+  geom_boxplot(aes(fill=IncomeRange))+
+    ylim(0, quantile(loans17$LP_NetPrincipalLoss, 0.95, na.rm=TRUE))+
+    scale_fill_brewer(type='seq')
+```
+
+Samething for LP_NetPrincipalLoss. It increases as CreditScore.bucket 
+increases for all income ranges.
+
+Figure 83
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17,
+                !is.na(CreditScore.bucket)&
+                IncomeRange!="Not displayed"&
+                CreditScore.bucket!="(300,400]"),
+                aes(x=CreditScore.bucket, 
+                y=(profit-LP_NetPrincipalLoss)))+
+  geom_boxplot(aes(fill=IncomeRange))+
+    ylim(0, quantile(loans17$LP_NetPrincipalLoss, 0.95, na.rm=TRUE))+
+    scale_fill_brewer(type='seq')
+```
+
+Above shows most Netprofit comes from the highest two credit score buckets and
+higher income ranges.
+
+
+Here I created a "LoanOriginationYear.bucket".
+
+Figure 84
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+summary(loans17$LoanOriginationYear)
+table(loans17$LoanOriginationYear)
+loans17$LoanOriginationYear.bucket<-cut(loans17$LoanOriginationYear,
+breaks=c(2006, 2008, 2009, 2011, 2012, 2014, 2015))
+
+
+ggplot(subset(loans17, !is.na(LoanOriginationYear)), 
+       aes(x=LoanOriginationYear))+
+  geom_histogram(aes(fill=LoanQuality))+
+  scale_fill_brewer(type='div')+
+  scale_x_continuous( limits=c(2005, 2015),breaks=seq(2005, 2015, 1))+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))
+```
+
+This shows how percent of bad loans decreases over time.
+Also it shows 2013 about 34000 loans!
+
+Figure 85
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17, !is.na(LoanOriginationYear) &
+                !is.na(CreditScore.bucket)), aes(x=LoanOriginationYear) )+
+  geom_histogram(aes(color=LoanQuality))+
+  scale_color_brewer(type='div')+
+  scale_x_continuous( limits=c(2005, 2015),breaks=seq(2005, 2015, 5))+
+  facet_wrap(~CreditScore.bucket, scales="free")+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))
+```  
+
+Now that the scales are free we see that the percent of 
+bad loans decrease as credit score bucket increase. Here green is a
+good loan.
+
+
+Figure 86
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(loans17, aes(x=IncomeRange))+
+  geom_histogram(aes(fill=LoanStatus))+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))+
+   scale_fill_brewer(type='div')
+``` 
+
+This was why I created the LoanQuality variable. There are to many 
+levels to make sense. So I converted the  'Completed' and 'Current' to the 
+level 'good_loan' in the LoanQuality variable. And the 'Cancelled' 
+and 'ChargedOff' levels were converted to 'bad_loan' and everything else
+'undetermined_loan'. The conversion turned the above busy graph in the 
+the easier to understand graph below.
+
+Figure 87
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(loans17, aes(x=IncomeRange))+
+  geom_histogram(aes(fill=LoanQuality))+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))+
+  scale_fill_brewer(type='div')
+```  
+
+Figure 88
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ ggplot(loans17, aes(x=IncomeRange))+
+  geom_histogram(aes(fill=CreditScore.bucket))+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))+
+  scale_fill_brewer(type='seq')+
+  facet_wrap(~Jan_2009_loans, scales='free_y')
+```
+
+ We can see the after January 2009 only loans with a credit score 
+ of 600 or better recieved loans.
+
+Figure 89
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(loans17, aes(x=AvgULCreditScore,y= NetProfit))+
+  geom_point(alpha=1/50, aes(color=IncomeRange))+
+  scale_color_brewer(type='seq',
+                     guide=guide_legend(title='IncomeRange', 
+                                        reverse=FALSE, 
+                                        override.aes=list(alpha=1, size=2)))+
+  geom_line(stat='summary', fun.y=median, color='red')+
+  facet_wrap(~Jan_2009_loans)+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))
+```
+
+With alpha of 1/50 it is ease to see most of the NetProfit points are 
+positive and the most profitable loans are from income ranges of $75-$99,000 and
+$100,000. Without alpha most points look negative. Let's zoom in to see the
+median line.
+
+Figure 90
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(loans17, aes(x=AvgULCreditScore,y= NetProfit))+
+  geom_point(alpha=1/50, aes(color=IncomeRange))+
+  scale_color_brewer(type='seq',
+                    guide=guide_legend(title='IncomeRange', 
+                                        reverse=FALSE, 
+                                        override.aes=list(alpha=1, size=2)))+
+  geom_line(stat='summary', fun.y=median, color='red')+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))+
+  coord_cartesian(ylim=c(-3000, 3000))+
+  facet_wrap(~Jan_2009_loans)
+```
+
+The pre2009 subset shows a median NetProfit line below a credit score 
+of about 520 is all negative NetProfit. Also, post2009 loans have a median 
+NetProfit line is over twice as high as the pre2009 subset.
+
+
+
+
+### Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the investigation. Were there features that strengthened each other in terms of looking at your feature(s) of interest?
+Figure 68 gives great insight into some of the requirements for maximum loan 
+amount and interest rates.
+
+A) Apparent pre2009 guidelines for loan approval:
+1) no loans above $25,000
+2) no loans above $15,000 with a credit score less than 550
+3) no loans above about $2,000 with a credit score less than 440
+4) no loans with a credit score less than about 380
+
+B) Apparent pre2009 guidelines for loan approval:
+1) no loans above $35,000
+2) no loans above $25,000 with a credit score less than 710
+3) no loans above $15,000 with a credit score less than 650
+4) no loans with a credit score less than about 600
+
+Figure 78 shows that before 2009 the top two credit buckets made most of the 
+profit. This may be why they changed police to only make loans to borrowers with 
+credit score of 600 or better.
+
+Figure 79 Wow! This shows profit approaching 10 million at about 2014.
+
+Figure 80 shows a negative net profit before 2009 and slow rise in 
+net profit though2012 and then a spike to about $10,000,000 by about 2014!
+
+### Were there any interesting or surprising interactions between features?
+Statistical evaluations and figure 70 shows fewer loans were made 
+pre2009. Also, the pre2009 graph has 36.2% of loans with a 
+NoNetLoss==F(the green) and the post2009 graph has only 7.3% of 
+loans with a NoNetLoss(green in the right graph above). This implies 
+the bank changed loan requirment policys in 2009 and these changes 
+decreased net loss.
+
+Figure 74 LP_NetPrincipalLoss_mean vs LoanOriginalMonth shows that borrower
+without an income verification have a higher average loss of principal than
+borrower with an income verification. 
+
+Figure 83 shows most Netprofit comes from the highest two credit score
+buckets and higher income ranges.
+
+------
+
+# Final Plots and Summary
+
+### Plot One
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(loans17, !is.na(pFraud)), aes(LoanOriginalAmount))+
+  geom_histogram(aes(fill=NoNetLoss))+
+  scale_fill_brewer(type='qual')+
+  facet_wrap(pFraud ~ Jan_2009_loans,  scales='free')+
+  ggtitle('Loan Count vs Original Loan Amount')+
+  xlab("Original Loan Amount in dollars")+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))
+```
+
+### Description One
+Figures 10 and 11 show that, loans granted with a debt to income ratio of 
+greater than 10 are rare.  Also, figure 14 shows that loans without income
+verification are also rare. So finding loans with both of these two rare 
+factors is bad loan granting policy or possible fraud. To examine these 
+loans closer a variable pFraud was created.  The variable value was  “T” for 
+loans with both “income not verified” and “a debt to income ratio greater 
+than 10”.  The variable value was “F” for all other loans. Also, in late 2008 
+there was a market crash and, as figure 68 shows, loans were granted 
+differently after January 2009. Therefore a variable was created and given
+a value of “pre2009” for loans granted before January 2009 and “post 2009”
+for loans granted after January 2009.  
+
+This graph was created to explore the possible fraudulent loans. Also to 
+see want affect loan granting criteria, both pre and post January 2009, 
+had on net loss. 
+
+The graph was colored purple for loans without a loss of principal or 
+interest. The graph was colored green for loans with a loss of principal 
+or interest.  The most interesting part of this is the bottom left graph. 
+These are the loans written before 2009 and where pFraud is true. That is, 
+loans written before January 2009 with no income verification and a debt
+to income ration greater than 10.  As the statistical evaluation 
+above (under figure 71) show these loans have a percent green or “F” of
+48%. That is 48% of the loans in the bottom left lost money. That is 12%
+higher loss rate for other loans of the same time period, “pre2009”.  
+That is, the top left graph. 
+
+Therefore the policy of granting loans without income verification and a 
+debt to income ratio of greater than 10 (bottom left graph) is at least 
+bad loan granting policy or at worst fraud. The most sticking part of the
+bottom left graph are the 20 loans granted for $25,000, 13 of these lost 
+money.  It would be interesting to see if the same loan agent wrote these 
+loans. Also, to see if his or her relative got the loans.
+
+Also, we saw in the graph 68 the loans granted post 2009 had stricter 
+criteria.  It appears these stricter criteria greatly reduced net loss. 
+There is much less green in the two graphs on the right compared to the 
+left.
+
+
+### Plot Two
+```{r echo=FALSE, Plot_Two}
+ggplot(loans17, aes(x=AvgULCreditScore, y=LoanOriginalAmount))+
+  geom_point(alpha=1/40, position=position_jitter(h=0),color='orange')+
+  geom_line(stat='summary', fun.y=median, color='blue')+
+  geom_line(stat='summary', fun.y= quantile, probs= 0.1,
+            linetype=2, color='blue')+
+  geom_line(stat='summary', fun.y= quantile, probs= 0.9,
+            linetype=2, color='blue')+
+  geom_line(stat='summary', fun.y= quantile, probs= 1,
+            linetype=4, color='red')+
+  facet_wrap(~Jan_2009_loans)+
+  ggtitle('Original Loan Amount vs Credit Score')+
+  xlab("Credit Score")+
+  ylab("Original Loan Amount in dollars")
+```
+
+### Description Two
+
+The graph above shows the distributions of loans with the 
+original loan amount vs. the credit score of the borrower. This was done 
+for loans granted before January 2009(pre2009) and after January 2009(post2009).
+In late 2008 there was a market crash and it appears loans were granted 
+differently before and after January 2009. This graph was created to see 
+if we can determine what the criteria for granting a loan were before January
+2009 and if the criteria changed after January 2009.
+
+The blue line represents the median loan amount over the different credit 
+scores of the borrowers.  An alpha of 1/40 was used to better visualize
+the distribution. The dotted blue lines below and above the median line 
+represent the 10th and 90th Quintile, respectively. The dotted red line 
+represents the sum of all loans across the credit scores of the borrowers.
+
+From these graphs we can clearly see some of the loan criteria. For
+example prior to January 2009 the maximum loan was $25,000 and after January
+2009 the maximum loan was $35,000.  Below are other apparent criteria for
+granting loans before and after January 2009:
+
+A) Apparent pre2009 guidelines for loan approval:
+1) no loans above $25,000
+2) no loans above $15,000 with a credit score less than 550
+3) no loans above about $2,000 with a credit score less than 440
+4) no loans with a credit score less than about 380
+
+B) Apparent pre2009 guidelines for loan approval:
+1) no loans above $35,000
+2) no loans above $25,000 with a credit score less than 710
+3) no loans above $15,000 with a credit score less than 650
+4) no loans with a credit score less than about 600
+ 
+This may explain the increase in NetProfit 
+after 2009 we will see below. 
+
+
+### Plot Three
+```{r echo=FALSE, Plot_Three}
+
+ggplot(loans17, aes(x=AvgULCreditScore,y= NetProfit))+
+  geom_point(alpha=1/50, aes(color=IncomeRange))+
+  scale_color_brewer(type='div',
+                     guide=guide_legend(title='Income Range', 
+                                        reverse=FALSE, 
+                                        override.aes=list(alpha=1, size=2)))+
+  geom_line(stat='summary', fun.y=median, color='red')+
+  coord_cartesian(ylim=c(-5000, 5000))+
+  facet_wrap(~Jan_2009_loans)+
+  theme(strip.text.y = element_text(angle=0))+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))+
+  ggtitle('Net Profit vs Credit Score')+
+  xlab("Credit Score")+
+  ylab("Net Profit in dollars")
+       
+```
+
+### Description Three
+Subtracting the losses from the profit for a loan created the NetProfit variable.
+The distribution of the loans net profit by credit score of the borrower were
+plotted. An alpha of 0.02 was used to better visualize the data.  Again, the
+distribution was looked at for loans before January 2009(pre2009) and after 
+2009(post 2009). This was done to see if the market crash and the new loan
+criteria after January 2009 had an effect on net profit.  The red line shows
+median profit for every loan in the data set by the different credit scores. 
+Also, the loan data points were colored by income range of the borrower.
+
+This shows a negative net profit for loans granted before January 2009 and with
+a credit score less that 550. It also show more loans with a high net profit,
+between $2500 and $5000 after 2009 are predominantly from loans with an income
+of $75,000-$99,999(light green) and greater than $100,000(green).  The plot 
+shows no loans after January 2009 with a credit score lower than 600. The red
+lines show that after January 2009 the median net profit was higher over all
+credit scores. This implies the new criteria for granting loans after 2009 and
+the improving economic contributed to increased net profits.  
+
+------
+
+# Reflection
+The prosperLoanData was analyzed. The data set contained 113937 data point with
+15 variables.  Through the exploration some variables were added and some were
+remove. First variables were looked at individually. Some variables needed
+wrangling. For example some loan origination date had a year of 2060. These were
+removed. 
+Many variables were created to give insight into relationships between variables.
+Examples of these were average credit score and net profit. These new variables
+enabled understanding of loan rate requirements and where and when loans were 
+the most profitable.  Eventually many variables were compared at once to draw
+conclusions. For example the created variable pre and post 2009 loans, income
+range, average credit score (in credit score buckets), net profit (derived from
+the profit and loss variables) came together in final plot 3 to give insight 
+into amount of profit by whom and when. To investigate this data further I 
+would look to see, from the original 81 variables in the data set, if one loan
+agent granted those loans that were bad or possibly fraudulent. Also, I would
+do a linear regression to try to evaluate if the derived loan criteria for
+loan rate and maximum loan amount could create a model.
+
+I struggled to understand why there were no loans granted from the end of 2008
+to mid 2009, figure 52. Also, why I was seeing more loans prior to January 2009
+but more profit after January 2009, figure 58. Plotting net profit variable vs.
+loan origination month (figure 80) and net profit by credit score (figure 90)
+gave great insight into what was going on. Figure 80 showed that two credit 
+score accounted for most of the profit. Figure 90 used facet-wrap to show 
+loans granted before and after January 2009.  This showed negative net profit
+in lower credit scores prior to January 2009. It also showed a change in loan
+granting criteria and much more profit after January 2009. I successfully
+understood the reason why more loans prior to January 2009 made less net profit
+than fewer loans after January 2009. The reason was because pre January 2009
+loans were granted with bad criteria and also a bad economy.
+
+Resources:
+1) http://www.inside-r.org/node/230680,
+2) http://stackoverflow.com/questions/21653295/dplyr-issues-when-using-group-bymultiple-variables,
+3) http://stackoverflow.com/questions/24880835/how-to-melt-and-cast-dataframes-using-dplyr,
+4) http://www.statmethods.net/advgraphs/axes.html
