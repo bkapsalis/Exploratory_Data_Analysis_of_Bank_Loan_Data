@@ -3,7 +3,7 @@
 To view html download and save as html and open in brouser.
 
 # Sample Results:
-Exploratory Data Analysis can find a great amount of information from a data set alone with not additional imformation. From the data we learn:
+Exploratory Data Analysis can find a great amount of information from a data set alone with no additional imformation. From the data we learn:
 - When Someone Said 'Stop Making All Loans!'
 - Maximum Loan Amount
 - Minimum Credit Score To Get a Loan
