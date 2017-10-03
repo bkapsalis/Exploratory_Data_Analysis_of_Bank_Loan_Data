@@ -9,7 +9,7 @@ To view html download and save as html and open in brouser.
 
 
 
-#![Alt text](/imgs/img5.png?raw=true "Optional Title")
+![Alt text](/imgs/img5.png?raw=true "Optional Title")
 ![Alt text](/imgs/img6.png?raw=true "Optional Title")
 
 The graph above shows the distributions of loans with the original loan amount vs. the credit score of the borrower. This was done for loans granted before January 2009(pre2009) and after January 2009(post2009). In late 2008 there was a market crash and it appears loans were granted differently before and after January 2009. This graph was created to see if we can determine what the criteria for granting a loan were before January 2009 and if the criteria changed after January 2009.
