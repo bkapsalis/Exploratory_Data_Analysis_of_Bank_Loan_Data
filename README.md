@@ -4,9 +4,11 @@ To view html download and save as html and open in brouser.
 
 # Sample Results:
 Exploratory Data Analysis can find a great amount of information from a data set alone with not additional imformation. From the data we learn:
-- When All Loans Were Stoped
+- When Someone Said 'Stop Making All Loans!'
 - Maximum Loan Amount
 - Minimum Credit Score To Get a Loan
+- Profit and Loss by Credit Score
+- Profit and Loss by Loan Orination
 - Possible Fraudulent or Incompitent Loans
 
 ## NetProfit vs LoanOriginationMonth
