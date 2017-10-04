@@ -1,6 +1,5 @@
 # Exporatory-Data-Analysis
-
-To view html download and save as html and open your brouser.
+To view complete report download  html above and save as html and open your brouser.
 
 # Sample Results:
 Exploratory Data Analysis can find a great amount of information from a data set alone with no additional information. From the data we learn:
@@ -8,7 +7,7 @@ Exploratory Data Analysis can find a great amount of information from a data set
 - Maximum Loan Amount
 - Minimum Credit Score To Get a Loan
 - Profit and Loss by Credit Score
-- Profit and Loss by Loan Ordination
+- Profit and Loss by Loan Origination
 - Possible Fraudulent or Incompetent Loans
 
 ## NetProfit vs LoanOriginationMonth
