@@ -1,5 +1,6 @@
 # Exporatory-Data-Analysis
-To view complete report download  html above and save as html and open your brouser.
+To view just the code used click .rmd above.
+To view complete exaaugsitive data analysis report including all code and all graphs download EDA_loan_data.html above and save as html and open your brouser. 
 
 # Sample Results:
 Exploratory Data Analysis can find a great amount of information from a data set alone with no additional information. From the data we learn:
