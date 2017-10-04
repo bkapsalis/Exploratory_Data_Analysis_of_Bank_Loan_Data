@@ -1,6 +1,6 @@
 # Exporatory-Data-Analysis
 
-To view html download and save as html and open in brouser.
+To view html download and save as html and open your brouser.
 
 # Sample Results:
 Exploratory Data Analysis can find a great amount of information from a data set alone with no additional information. From the data we learn:
