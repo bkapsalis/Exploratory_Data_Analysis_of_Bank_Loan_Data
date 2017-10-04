@@ -1,5 +1,7 @@
 # Exploratory Data Analysis
 
+To view Exploratory Data Analysis report click this [link.](http://bl.ocks.org/bkapsalis/raw/94803424dd383d781df3a0bf0ca4d6a2/)
+
 To view complete exhaustive data analysis report including all code and all graphs download EDA_loans_project.html above and save as html and open your browser. 
 
 To view just the code used in the complete report click EDA_loans_project.rmd above.
