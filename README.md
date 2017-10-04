@@ -41,17 +41,18 @@ Apparent post2009 guidelines for loan approval:
 This may explain the increase in NetProfit after 2009 we will see below.
 
 
-
-
-
-
-
 ![Alt text](/imgs/img3.png?raw=true "Optional Title")
 
-This graph shows NetProfit vs CreditScore for both pre and post 2009 loans. The pre2009 shows that the back lost money on average for loans with a credit score of less than 600. This could explain why the post2009 graph shows no loans with a credit score less than 600 in the above orange graph.
+This graph shows NetProfit vs CreditScore for both pre and post 2009 loans. The pre2009 shows that the bank lost money on average for all loans with a credit score of less than 550. This could explain why the post2009 graph shows no loans with a credit score less than 600 in this post2009 graph and the above orange post2009 graph.
 
 ![Alt text](/imgs/img4.png?raw=true "Optional Title")
 ![Alt text](/imgs/img1.png?raw=true "Optional Title")
+
+I created a flied possible fraud(pFraud) that consisted of all loans made to a person with a greater than 10 to 1 debt to income ratio and these people did not give income verification. These people owed 10 times more than they earned and the did not verify there income yet the bottom left graph pre2009 show many loans made to these people. The bottom left graph shows that 20 loans for the maximum loan about(from the NetProfit vs LoanOriginationMonth-orange graph above) were made to with a high debt to income ratio and no income verification. Not surprisingly 13 out of 20 of these loans had no net profit. Also, the bottom right graph shows that post2009 very few loans were made to people with a very high debt to income ratio and no income verification.
+
+
+The above graphs show the amazing power of Exploratory Data Analysis.
+
 
 
 
