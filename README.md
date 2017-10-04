@@ -1,25 +1,24 @@
-# Exporatory-Data-Analysis
+# Exploratory Data Analysis
 
-To view complete exaaugsitive data analysis report including all code and all graphs download EDA_loans_project.html above and save as html and open your brouser. 
-To view just the code used in the report click EDA_loans_project.rmd above.
+To view complete exhaustive data analysis report including all code and all graphs download EDA_loans_project.html above and save as html and open your browser. 
+
+To view just the code used in the complete report click EDA_loans_project.rmd above.
 
 # Sample Results:
-Exploratory Data Analysis can find a great amount of information from a data set alone with no additional information. From the data we learn:
+Exploratory Data Analysis can find a great amount of information from a data set alone with no additional information. From this data we learn:
 - When Someone Said 'Stop Making All Loans!'
 - Maximum Loan Amount
 - Minimum Credit Score To Get a Loan
 - Profit and Loss by Credit Score
-- Profit and Loss by Loan Origination
+- Profit and Loss by Loan Origination Date
 - Possible Fraudulent or Incompetent Loans
 
 ## NetProfit vs LoanOriginationMonth
 ![Alt text](/imgs/img2.png?raw=true "Optional Title")
 
-This graph demonstrates that essentially all loans stopped for some reason late 2008 for about 9 months. In the next few graphs we will see some possible reasons why this happened.
+This graph demonstrates that essentially all loans stopped, for some reason,  late in 2008 for about 9 months. In the next few graphs we will see some possible reasons why this happened.
 
-The above graph uses an alpha of 1/40 was used to better visualize the distribution. This means that 40 loans at the same  point on the graph would result in a black dot. 20 loans at one point would be a gray. If one dot represented one loan it would be a very light gray.
-
-
+The above graph uses an alpha of 1/40 was used to better visualize the distribution. This means that 40 loans at the same  point on the graph would result in a black dot. 20 loans at one point would give a gray dot. If one dot represented one loan it would be a very light gray.
 
 ![Alt text](/imgs/img6.png?raw=true "Optional Title")
 
@@ -55,16 +54,5 @@ I created a flied possible fraud(pFraud) that consisted of all loans made to a p
 The above graphs show the amazing power of Exploratory Data Analysis.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+The Data:
 #https://docs.google.com/spreadsheets/d/1gDyi_L4UvIrLTEC6Wri5nbaMmkGmLQBk-Yx3z0XDEtI/edit#gid=0
