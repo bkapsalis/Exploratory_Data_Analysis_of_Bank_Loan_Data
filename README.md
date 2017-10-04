@@ -54,5 +54,5 @@ I created a flied possible fraud(pFraud) that consisted of all loans made to a p
 The above graphs show the amazing power of Exploratory Data Analysis.
 
 
-The Data:
+The data fields explanation:
 #https://docs.google.com/spreadsheets/d/1gDyi_L4UvIrLTEC6Wri5nbaMmkGmLQBk-Yx3z0XDEtI/edit#gid=0
