@@ -48,6 +48,8 @@ This may explain the increase in NetProfit after 2009 we will see below.
 
 ![Alt text](/imgs/img3.png?raw=true "Optional Title")
 
+This graph shows NetProfit vs CreditScore for both pre and post 2009 loans. The pre2009 shows that the back lost money on average for loans with a credit score of less than 600. This could explain why the post2009 graph shows no loans with a credit score less than 600 in the above orange graph.
+
 ![Alt text](/imgs/img4.png?raw=true "Optional Title")
 ![Alt text](/imgs/img1.png?raw=true "Optional Title")
 
